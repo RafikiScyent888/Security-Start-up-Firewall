@@ -349,24 +349,32 @@ export function addSegment(w, name, members) {
   if (unknown.length) return { ok: false, msg: "There is no device called " + unknown[0] + "." };
 
   /* ONE DEVICE, ONE SEGMENT — the same way a switch port belongs to one
-     VLAN and not to two. Without this, a device could sit in two
-     segments at once, `segmentOf` would return whichever was created
-     first, and the student would be looking at a map that disagreed with
-     the engine. */
-  const clash = members.map(id => ({ id: id, seg: segmentOf(w, id) })).filter(x => x.seg)[0];
-  if (clash) {
-    return {
-      ok: false,
-      msg: device(w, clash.id).name + " is already in " + clash.seg.name +
-           ". A device belongs to one segment at a time, the same way a switch port belongs to one VLAN. " +
-           "Dissolve that segment first if you want to move it."
-    };
-  }
+     VLAN and not to two.
+
+     Devices already in another segment are MOVED here rather than
+     refused. Refusing them was a wall: to put one camera somewhere
+     else you had to dissolve a whole segment and rebuild it from
+     nothing, which is not how anybody has ever changed a VLAN. You
+     assign the port to the new one and it leaves the old one. */
+  const moved = [];
+  members.forEach(id => {
+    const from = segmentOf(w, id);
+    if (!from) return;
+    from.members = from.members.filter(x => x !== id);
+    moved.push(device(w, id).name + " out of " + from.name);
+  });
+  /* A segment emptied by that is gone — an empty one separates nothing. */
+  w.segments = w.segments.filter(sg => sg.members.length);
 
   w.segments.push({ id: key, name: name, members: members.slice() });
   record(w, "segment.created", name + " — " + members.length + " device(s)",
-         "separated so a problem on one cannot reach the others");
-  return { ok: true, msg: name + " created. Traffic between segments is now the firewall's decision, not a free ride." };
+         "separated so a problem on one cannot reach the others" +
+         (moved.length ? "; moved " + moved.join(", ") : ""));
+  return {
+    ok: true,
+    msg: name + " created. Traffic between segments is now the firewall's decision, not a free ride." +
+         (moved.length ? " Moved " + moved.length + " device(s) out of where they were." : "")
+  };
 }
 
 /** Dissolve a segment and put its devices back on the flat network.
@@ -435,4 +443,98 @@ export function moveRule(w, id, delta) {
   record(w, "rule.moved", "rule " + (i + 1) + " → position " + (j + 1),
          "the first rule that matches decides, so the order is the control");
   return { ok: true, msg: "Moved to position " + (j + 1) + ". That changes what the router actually does." };
+}
+
+/* ---------------------------------------------------------------------
+   EDITING WHAT IS ALREADY THERE
+
+   Adding and deleting is not the same as changing. A student who has
+   to dissolve a whole segment to move one camera, or delete a rule and
+   retype it to fix a port, is being punished for having second
+   thoughts — and second thoughts are the entire activity.
+
+   Everything below is recorded with a reason and has an inverse, like
+   every other change in this file.
+   --------------------------------------------------------------------- */
+
+/** Move one device to another segment, or out of all of them.
+    `to` is a segment id, or null for "back on the flat network". */
+export function moveDevice(w, deviceId, to) {
+  const d = device(w, deviceId);
+  if (!d) return { ok: false, msg: "No such device." };
+  const from = segmentOf(w, deviceId);
+  const target = to ? w.segments.filter(sg => sg.id === to)[0] : null;
+  if (to && !target) return { ok: false, msg: "No such segment." };
+  if (from && target && from.id === target.id) {
+    return { ok: false, msg: d.name + " is already in " + target.name + "." };
+  }
+  if (!from && !target) return { ok: false, msg: d.name + " is not in a segment." };
+
+  if (from) from.members = from.members.filter(x => x !== deviceId);
+  if (target) target.members.push(deviceId);
+
+  /* An emptied segment is gone. Leaving one behind with nothing in it
+     would show a boundary on the map that separates nothing. */
+  const emptied = w.segments.filter(sg => !sg.members.length).map(sg => sg.name);
+  w.segments = w.segments.filter(sg => sg.members.length);
+
+  record(w, "device.moved",
+         d.name + ": " + (from ? from.name : "no segment") + " → " + (target ? target.name : "no segment"),
+         target ? "what it can reach changed" : "back on the flat network, reaching everything");
+  return {
+    ok: true,
+    msg: d.name + " is now " + (target ? "in " + target.name : "outside every segment, reaching everything") + "." +
+         (emptied.length ? " " + emptied.join(" and ") + " had nothing left in it and is gone." : "")
+  };
+}
+
+export function renameSegment(w, id, name) {
+  const sg = w.segments.filter(x => x.id === id)[0];
+  if (!sg) return { ok: false, msg: "No such segment." };
+  const clean = String(name || "").trim();
+  if (!clean) return { ok: false, msg: "Give it a name." };
+  const was = sg.name;
+  sg.name = clean;
+  record(w, "segment.renamed", was + " → " + clean, "a name somebody else will have to understand");
+  return { ok: true, msg: "Renamed to " + clean + "." };
+}
+
+/** Off without deleting. A disabled rule still documents an intention,
+    and switching one off to see what changes is how people actually
+    work out what a ruleset is doing. */
+export function setRuleEnabled(w, id, on) {
+  const r = w.firewall.rules.filter(x => x.id === id)[0];
+  if (!r) return { ok: false, msg: "No such rule." };
+  r.enabled = !!on;
+  const i = w.firewall.rules.indexOf(r);
+  record(w, on ? "rule.enabled" : "rule.disabled", "rule " + (i + 1) + " " + (on ? "on" : "off"),
+         on ? "back in the ruleset" : "left in place and no longer consulted");
+  return {
+    ok: true,
+    msg: "Rule " + (i + 1) + " is " + (on ? "live again." :
+      "off. It is still written down, and the router now skips straight past it.")
+  };
+}
+
+/** Change a rule in place. Anything not in the patch is left alone. */
+export function editRule(w, id, patch) {
+  const r = w.firewall.rules.filter(x => x.id === id)[0];
+  if (!r) return { ok: false, msg: "No such rule." };
+  if (!patch) return { ok: false, msg: "Nothing to change." };
+
+  const before = [r.dir, r.srcIp, r.dstIp, r.dstPort, r.proto, r.action].join(" ");
+  ["dir", "srcIp", "dstIp", "proto", "note"].forEach(k => {
+    if (patch[k] != null && patch[k] !== "") r[k] = patch[k];
+  });
+  if (patch.dstPort != null && patch.dstPort !== "") r.dstPort = patch.dstPort;
+  if (patch.action === "allow" || patch.action === "deny") r.action = patch.action;
+
+  const after = [r.dir, r.srcIp, r.dstIp, r.dstPort, r.proto, r.action].join(" ");
+  const i = w.firewall.rules.indexOf(r);
+  if (before === after && patch.note == null) {
+    return { ok: false, msg: "Nothing about rule " + (i + 1) + " changed." };
+  }
+  record(w, "rule.edited", "rule " + (i + 1) + ": " + before + " → " + after,
+         patch.note || "changed by the owner");
+  return { ok: true, msg: "Rule " + (i + 1) + " changed. Its position in the order has not." };
 }
