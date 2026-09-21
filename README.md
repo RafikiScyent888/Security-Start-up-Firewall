@@ -1,1 +1,0 @@
-# Security-Start-up-Firewall
