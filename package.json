@@ -1,0 +1,6 @@
+{
+  "name": "security-start-up-firewall",
+  "private": true,
+  "type": "module",
+  "description": "Tier 1. No dependencies, no build step — package.json exists only so node treats the .js files as ES modules, the same way the browser does."
+}

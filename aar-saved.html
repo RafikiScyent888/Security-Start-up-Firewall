@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light"
+      data-dyslexia="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AAR — SSG J. Rivera</title>
+<style>:root { --bg: #0c1016; --surface: #151c26; --surface-2: #1d2631; --line: #2b3542; --edge: #66768a; --ink: #eef3f9; --ink-dim: #c3ced9; --green: #7fdca4; --purple: #cdb2f5; --blue: #8fc8f5; --red: #ff9d9d; --silver: #c9d2dc; --yellow: #f2d16b; --green-bg: #16291f; --purple-bg: #221d2e; --blue-bg: #16222e; --red-bg: #2b1a1c; --silver-bg: #1e242c; --yellow-bg: #2a2417; --focus: #f2d16b; --shadow: 0 1px 0 rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35); --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace; --tracking: 0; --word: normal; --leading: 1.6; --measure: 68ch; --gap: .9rem; --pad: 1rem; --round: 10px; }
+:root[data-theme="light"] { --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #c8c3b8; --edge: #6e7681; --ink: #161b22; --ink-dim: #3d4652; --green: #0d5331; --purple: #4e2b8a; --blue: #11507f; --red: #8f0f1b; --silver: #3f4853; --yellow: #5d4200; --green-bg: #e3f2e9; --purple-bg: #ede5fa; --blue-bg: #e3eff9; --red-bg: #fbeaeb; --silver-bg: #eceef1; --yellow-bg: #f8f2e0; --focus: #553093; --shadow: 0 1px 0 rgba(0,0,0,.05), 0 6px 18px rgba(20,16,8,.10); }
+:root[data-dyslexia="on"] { --font-body: Verdana, Tahoma, "Trebuchet MS", "DejaVu Sans", sans-serif; --tracking: .04em; --word: .16em; --leading: 1.9; --measure: 56ch; }
+*, ::before, ::after { box-sizing: border-box; }
+html { font-size: 17px; text-size-adjust: 100%; }
+@media (min-width: 700px) {
+  html { font-size: 18px; }
+}
+body { margin: 0px; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: var(--leading); letter-spacing: var(--tracking); word-spacing: var(--word); text-align: left; min-height: 100vh; }
+h1, h2, h3 { line-height: 1.25; text-wrap: balance; margin: 0px 0px 0.5em; }
+h1 { font-size: 1.35rem; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p, li { max-width: var(--measure); }
+p { margin: 0px 0px 0.8em; }
+a { color: var(--blue); text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+code, kbd, .mono { font-family: var(--font-mono); font-size: 0.92em; letter-spacing: 0px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px; }
+.shell { max-width: 1240px; margin: 0px auto; padding: 0px 1rem 3rem; }
+.topbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem var(--gap); padding: 1rem 0px 0.75rem; border-bottom: 1px solid var(--line); }
+.topbar h1 { margin: 0px; }
+.topbar .tier { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--purple); background: var(--purple-bg); border: 1px solid var(--purple); border-radius: 999px; padding: 0.15rem 0.6rem; }
+.topbar .switches { margin-left: auto; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.clock { font-family: var(--font-mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+button { font: inherit; letter-spacing: var(--tracking); color: var(--ink); background: var(--surface-2); border: 1px solid var(--edge); border-radius: var(--round); padding: 0.5rem 0.8rem; cursor: pointer; min-height: 44px; }
+button:hover { border-color: var(--ink); }
+button[disabled] { cursor: not-allowed; }
+.btn-primary { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 700; }
+.btn-quiet { background: transparent; }
+.nav-toggle { display: flex; align-items: center; gap: 0.5rem; width: 100%; margin: 0.7rem 0px 0px; font-weight: 700; }
+.nav-toggle .caret { margin-left: auto; }
+.nav-toggle .where { font-weight: 400; font-size: 0.85rem; color: var(--ink-dim); }
+.tabs { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.4rem 0px; }
+.tabs[data-open="false"] { display: none; }
+.tabs button { width: 100%; text-align: left; background: transparent; border-color: transparent; color: var(--ink-dim); border-left-width: 4px; border-left-style: solid; border-radius: var(--round); }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--surface); border-top-color: ; border-right-color: ; border-bottom-color: ; border-left-color: var(--purple); font-weight: 700; }
+.tabs .badge { display: inline-block; margin-left: 0.4rem; font-size: 0.75rem; font-weight: 700; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--silver-bg); color: var(--silver); border: 1px solid var(--silver); font-variant-numeric: tabular-nums; }
+.layout { display: block; }
+@media (min-width: 980px) {
+  .layout { display: grid; grid-template-columns: 15rem minmax(0px, 1fr); gap: 1.4rem; align-items: start; }
+  .nav-toggle { display: none; }
+  .tabs { position: sticky; top: 1rem; }
+  .tabs[data-open="false"] { display: flex; }
+}
+.pane { display: none; }
+.pane[data-active="true"] { display: block; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--round); padding: var(--pad); margin: 0 0 var(--gap); }
+.card > h2:first-child, .card > h3:first-child { margin-top: 0px; }
+.lede { color: var(--ink-dim); }
+.grid { display: grid; gap: var(--gap); }
+@media (min-width: 760px) {
+  .grid.two { grid-template-columns: 1fr 1fr; }
+}
+.options { display: grid; gap: 0.6rem; margin: 0px; padding: 0px; list-style: none; }
+@media (min-width: 760px) {
+  .options { grid-template-columns: 1fr 1fr; }
+}
+.option { display: block; width: 100%; text-align: left; background: var(--surface-2); border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--edge); border-radius: var(--round); padding: 0.7rem 0.85rem; min-height: 44px; }
+.option .label { display: block; font-weight: 600; }
+.option .mark { display: inline-block; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 0.45rem; }
+.option .reason { display: block; margin-top: 0.35rem; font-size: 0.92rem; color: var(--ink-dim); }
+.option[data-state="wrong"] { background: var(--red-bg); border-top-color: ; border-right-color: ; border-bottom-color: ; border-left-color: var(--red); color: var(--red); cursor: not-allowed; }
+.option[data-state="wrong"] .label { text-decoration: line-through 2px; }
+.option[data-state="wrong"] .reason { color: var(--red); text-decoration: none; }
+.option[data-state="right"] { background: var(--green-bg); border-top-color: ; border-right-color: ; border-bottom-color: ; border-left-color: var(--green); color: var(--green); }
+.option[data-state="right"] .label::after { content: " ✓"; }
+.objective { border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--edge); border-radius: var(--round); background: var(--surface); padding: 0.8rem 0.9rem; margin-bottom: 0.7rem; }
+.objective[data-met="true"] { border-left-color: var(--green); }
+.objective[data-met="false"] { border-left-color: var(--yellow); }
+.objective .head { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+.objective .state { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 0.1rem 0.55rem; border: 1px solid currentcolor; white-space: nowrap; }
+.objective[data-met="true"] .state { color: var(--green); background: var(--green-bg); }
+.objective[data-met="false"] .state { color: var(--yellow); background: var(--yellow-bg); }
+.objective .title { font-weight: 700; }
+.objective .status { color: var(--ink-dim); margin: 0.35rem 0px 0px; }
+.objective .why { margin: 0.5rem 0px 0px; }
+.hint { margin-top: 0.7rem; border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--purple); background: var(--purple-bg); color: var(--purple); border-radius: var(--round); padding: 0.7rem 0.85rem; }
+.hint .rung { display: block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.25rem; }
+.hint p { color: var(--purple); margin: 0px; }
+.progress { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.progress .count { font-size: 1.6rem; font-weight: 700; }
+.progress .bar { flex: 1 1 8rem; height: 12px; min-width: 6rem; background: var(--surface-2); border: 1px solid var(--edge); border-radius: 999px; overflow: hidden; }
+.progress .bar span { display: block; height: 100%; background: var(--green); }
+.map-wrap { overflow-x: auto; }
+.map { width: 100%; min-width: 680px; height: auto; display: block; }
+.map text { font-family: var(--font-body); fill: var(--ink); }
+.map .node-box { fill: var(--surface-2); stroke: var(--edge); stroke-width: 2; }
+.map .node-box.exposed { stroke: var(--red); stroke-width: 4; }
+.map .link { stroke: var(--edge); stroke-width: 2; }
+.map .link.uninspected { stroke-dasharray: 6, 4; }
+.map .seg-box { fill: none; stroke: var(--purple); stroke-width: 2; stroke-dasharray: 4, 4; }
+.map .seg-label { fill: var(--purple); font-weight: 700; }
+.device-list { list-style: none; margin: 0px; padding: 0px; display: grid; gap: 0.5rem; }
+.device-list button { width: 100%; text-align: left; }
+.device-list .flags { display: block; margin-top: 0.3rem; font-size: 0.85rem; }
+.flag { display: inline-block; margin: 0.15rem 0.3rem 0.15rem 0px; font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid currentcolor; }
+.flag.bad { color: var(--red); background: var(--red-bg); }
+.flag.warn { color: var(--yellow); background: var(--yellow-bg); }
+.flag.ok { color: var(--green); background: var(--green-bg); }
+.flag.neutral { color: var(--silver); background: var(--silver-bg); }
+.log-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: var(--gap); }
+.log-controls select, .log-controls input { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--edge); border-radius: var(--round); padding: 0.5rem 0.6rem; min-height: 44px; }
+.log { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.log th, .log td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.log th { color: var(--ink-dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.log .t, .log .bytes { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.log .verdict { font-weight: 700; white-space: nowrap; }
+.log tr[data-action="drop"] .verdict { color: var(--red); }
+.log tr[data-action="accept"] .verdict { color: var(--green); }
+.log .why { color: var(--ink-dim); }
+@media (max-width: 759px) {
+  .log, .log tbody, .log tr, .log td { display: block; width: 100%; }
+  .log thead { display: none; }
+  .log tr { border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--edge); border-radius: var(--round); margin-bottom: 0.5rem; padding: 0.4rem 0.55rem; }
+  .log tr[data-action="drop"] { border-left-color: var(--red); }
+  .log tr[data-action="accept"] { border-left-color: var(--green); }
+  .log td { border: 0px; padding: 0.1rem 0px; }
+  .log td::before { content: attr(data-label) " "; color: var(--ink-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+}
+.voo-empty { border: 2px dashed var(--edge); border-radius: var(--round); padding: 1.4rem var(--pad); text-align: left; }
+.voo-empty .big { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.4rem; }
+.rule { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--edge); border-radius: var(--round); background: var(--surface-2); padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; }
+.rule[data-action="allow"] { border-left-color: var(--green); }
+.rule[data-action="deny"] { border-left-color: var(--red); }
+.rule .n { font-family: var(--font-mono); font-weight: 700; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.rule .said { flex: 1 1 14rem; }
+.rule .ops { display: flex; gap: 0.3rem; margin-left: auto; }
+.rule .ops button { padding: 0.35rem 0.6rem; min-height: 44px; min-width: 44px; }
+.note { border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--yellow); background: var(--yellow-bg); color: var(--yellow); border-radius: var(--round); padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; }
+.msg { border-top-color: ; border-top-style: ; border-top-width: ; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-left: 6px solid var(--blue); background: var(--blue-bg); color: var(--blue); border-radius: var(--round); padding: 0.6rem 0.8rem; margin: 0.6rem 0px; }
+.msg[data-ok="false"] { border-top-color: ; border-right-color: ; border-bottom-color: ; border-left-color: var(--red); background: var(--red-bg); color: var(--red); }
+.instructor { border: 2px solid var(--purple); border-radius: var(--round); background: var(--purple-bg); padding: var(--pad); }
+.instructor h3 { color: var(--purple); }
+.instructor p, .instructor li { color: var(--purple); }
+.site-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--ink-dim); font-size: 0.88rem; }
+.site-footer p { max-width: var(--measure); }
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] { --bg: #ffffff; --surface: #ffffff; --surface-2: #ffffff; --line: #9a9a9a; --edge: #444444; --ink: #000000; --ink-dim: #333333; --green: #14532d; --purple: #3b2063; --blue: #0b3c63; --red: #7a0c16; --silver: #333333; --yellow: #4a3400; --green-bg: #fff; --purple-bg: #fff; --blue-bg: #fff; --red-bg: #fff; --silver-bg: #fff; --yellow-bg: #fff; --shadow: none; }
+  @page { margin: 18mm 16mm 20mm; }
+  html { font-size: 11pt; }
+  body { background: rgb(255, 255, 255); }
+  .shell { max-width: none; padding: 0px; }
+  .tabs, .nav-toggle, .switches, .log-controls, button, input, select, textarea, form[data-form="aar-name"], form[data-form="aar-note"], [data-save-copy], [data-load-copy], .clock { display: none !important; }
+  .card, .objective, .note, .msg, .instructor, .hint { border-right: 0px; border-bottom: 0px; border-left: 0px; border-image: initial; border-top: 1px solid var(--line); border-radius: 0px; padding: 0.6em 0px 0px; margin: 0px 0px 1em; box-shadow: none; background: rgb(255, 255, 255) !important; color: rgb(0, 0, 0) !important; }
+  .objective { border-left: 0px; }
+  .note, .instructor, .hint { border-left: 3pt solid rgb(0, 0, 0); padding-left: 0.8em; }
+  h1, h2, h3 { break-after: avoid; }
+  h2 { break-before: page; }
+  h2:first-of-type { break-before: auto; }
+  .objective, .rule, blockquote, table, li { break-inside: avoid; }
+  thead { display: table-header-group; }
+  .log { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
+  .log th, .log td { border: 0.5pt solid var(--line); padding: 0.3em 0.4em; }
+  .log thead { display: table-header-group; }
+  .grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; }
+  blockquote { margin: 0.5em 0px 0.5em 1em; padding-left: 0.8em; border-left: 2pt solid var(--line); font-style: normal; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.85em; color: rgb(51, 51, 51); }
+  .site-footer { border-top: 1pt solid var(--line); }
+  .map-wrap { overflow: visible; }
+  .map { min-width: 0px; max-width: 100%; }
+}</style>
+</head>
+<body>
+<div class="shell">
+<header class="topbar">
+  <h1>After Action Review</h1>
+  <span class="tier">Cyber Warrior Program</span>
+  <div class="switches">
+    <button type="button" onclick="document.documentElement.setAttribute('data-theme',
+      document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">Switch theme</button>
+    <button type="button" onclick="document.documentElement.setAttribute('data-dyslexia',
+      document.documentElement.getAttribute('data-dyslexia')==='on'?'off':'on')">Easier reading</button>
+    <button type="button" onclick="window.print()">Save as PDF</button>
+  </div>
+</header>
+<main><div class="card" style="background:var(--surface-2)">
+    <p><strong>SSG J. Rivera</strong></p>
+    <p class="lede">Started 2026-09-21 &middot;
+      In progress, as at 2026-09-21<br>
+      Tier 1 &middot; The four-pack &middot; seed <span class="mono">11817</span>
+      &middot; attempt 1</p>
+  </div>
+<p>This is an After Action Review, in the format you already know. Four questions, and
+    nobody in the room outranks anybody:</p>
+  <ol>
+    <li>What was supposed to happen</li>
+    <li>What actually happened</li>
+    <li>Why there was a difference</li>
+    <li>What we sustain, and what we improve</li>
+  </ol>
+  <p class="lede">There is no grade in this document and there is no pass mark. What is here instead
+    is where the business ended up and which parts of the exam you actually exercised.</p>
+<h3>Where it stands</h3>
+<div class="grid two">
+<div class="card">
+    <h3 style="margin-top:0">The business</h3>
+    <p class="lede">There is no business yet — Tier 1 is the house you will start it in. What
+      matters here is the state of the network you hand forward.</p>
+    <ul>
+      <li>4 of 6 objectives met at the state the network is in now</li>
+      <li>Nothing reachable from the internet</li>
+      <li>A device is carrying a foothold into Tier 2</li>
+    </ul>
+  </div>
+<div class="card">
+    <h3 style="margin-top:0">Exam coverage</h3>
+    <p class="lede">Which parts of the certification you actually exercised, at domain and bullet
+      level. Coverage, not a score.</p>
+    <ul><li><strong>General security concepts</strong> — 3 of 4 bullets
+      exercised</li><li><strong>Threats, vulnerabilities and mitigations</strong> — 2 of 4 bullets
+      exercised</li><li><strong>Security architecture</strong> — 2 of 2 bullets
+      exercised</li><li><strong>Security operations</strong> — 4 of 7 bullets
+      exercised</li><li><strong>Security program management</strong> — 1 of 1 bullets
+      exercised</li></ul>
+  </div>
+</div>
+<h3>The spine, start to finish</h3>
+<div class="objective" data-met="false">
+    <div class="head">
+      <span class="state">4 of 6</span>
+      <span class="title">Tier 1 — The house &middot; The four-pack</span>
+    </div>
+    <p class="status">Somebody bought four cameras in one box and wanted to watch them from work.</p>
+<p><strong>What actually happened.</strong> The Front Door Camera was taken at 20:08:00 on day 1. Somebody reached it from the internet and logged in with a credential they did not have
+        to guess. It has been talking to an address no device in this house had ever used since.</p>
+<p><strong>Why there was a difference.</strong> The hole is shut now, and it is
+          still talking. Closing a hole stops the <em>next</em> arrival and does nothing about the
+          one already inside.</p>
+<p><strong>How it was handled.</strong></p>
+<p style="margin-bottom:.2em"><strong>The good</strong></p>
+<ul><li>The cameras cannot reach the family&#39;s devices. That does not stop one being taken — it stops a taken one being useful, which is the whole of what segmentation buys.</li><li>You opened the log. Nothing in this house was ever going to interrupt you, and the only reason you know anything at all is that you went and looked.</li><li>You worked it out by elimination — 2 ruled out with a reason before you settled. That is the job; the board was doing the remembering so you did not have to.</li></ul>
+<p style="margin-bottom:.2em"><strong>The bad</strong></p>
+<ul><li>You closed the way in, and you closed it late. It stops the next arrival and does nothing about the one already inside — which is the difference between containment and prevention, and it is the most expensive sentence in this tier.</li></ul>
+<p style="margin-bottom:.2em"><strong>The ugly</strong></p>
+<ul><li>6 devices are still on credentials that are published or reused. Fixing one of a set changes nothing when they all share it.</li></ul>
+<p><strong>What you were actually learning.</strong> Every one of these is on the exam,
+    and you have been doing them all evening under different words.</p>
+<p style="margin-bottom:.2em"><strong>✓ Nothing reaches in that shouldn&#39;t</strong></p>
+<ul><li>General security concepts — security controls: preventive, technical</li><li>Threats, vulnerabilities and mitigations — threat vectors: unsecure networks and open service ports</li><li>Security architecture — infrastructure considerations: attack surface</li></ul>
+<p style="margin-bottom:.2em"><strong>— No device still uses the password it shipped with</strong></p>
+<ul><li>Threats, vulnerabilities and mitigations — hardening targets, and default credentials as a vulnerability</li><li>Security operations — secure baselines and hardening</li><li>Threats, vulnerabilities and mitigations — password attacks: spraying and stuffing, which is not brute force</li></ul>
+<p class="why"><strong>Left open.</strong> The same published password works on the next device, and on the one after that. Nothing about the attack has to improve.</p>
+<p style="margin-bottom:.2em"><strong>✓ The cameras can&#39;t reach the family&#39;s devices</strong></p>
+<ul><li>Security architecture — architecture concepts: segmentation</li><li>Security operations — mitigation techniques: segmentation, isolation, least privilege</li><li>General security concepts — zero trust, in embryo: position on a network is not trust</li></ul>
+<p style="margin-bottom:.2em"><strong>✓ You know what normal looks like</strong></p>
+<ul><li>Security operations — data sources: log data</li><li>Security operations — monitoring computing resources</li><li>General security concepts — security controls: detective</li></ul>
+<p style="margin-bottom:.2em"><strong>— Your rules do what you think they do</strong></p>
+<ul><li>Security operations — firewall rules, rule order and access control lists</li><li>General security concepts — change management, and why a documented reason matters</li><li>Security operations — configuration enforcement</li></ul>
+<p class="why"><strong>Left open.</strong> A ruleset nobody has read from the top is a ruleset that will be trusted when it matters. The first time that costs anything is the first time something has to be kept out.</p>
+<p style="margin-bottom:.2em"><strong>✓ You can say what is happening in this house</strong></p>
+<ul><li>Threats, vulnerabilities and mitigations — indicators of malicious activity: beaconing and anomalous traffic</li><li>Security operations — alerting and monitoring, and incident response: detection and analysis</li><li>Security program management — security awareness: anomalous behaviour recognition</li></ul>
+<p><strong>Your own account.</strong> What you thought at the time, and what you would
+    do differently. This is the half of the review that is yours, and it is the part you will be
+    asked about in class.</p>
+<p class="lede">[left blank]</p>
+</div>
+<div class="objective" data-met="false">
+        <div class="head"><span class="state">not reached</span>
+          <span class="title">Tier 2 — The business starts</span></div>
+        <p class="status">Six months on. The same house, and a client&#39;s data in it.</p>
+        <p class="why">Not reached. Nothing here is a mark against anybody — it is the road ahead.</p>
+      </div>
+<div class="objective" data-met="false">
+        <div class="head"><span class="state">not reached</span>
+          <span class="title">Tier 3 — Growth</span></div>
+        <p class="status">Eighteen months. Three hires, three clients, and other people&#39;s mistakes.</p>
+        <p class="why">Not reached. Nothing here is a mark against anybody — it is the road ahead.</p>
+      </div>
+<div class="objective" data-met="false">
+        <div class="head"><span class="state">not reached</span>
+          <span class="title">Tier 4 — The office</span></div>
+        <p class="status">Two years. A building, field techs, six remote, and regulated data.</p>
+        <p class="why">Not reached. Nothing here is a mark against anybody — it is the road ahead.</p>
+      </div>
+<div class="objective" data-met="false">
+        <div class="head"><span class="state">not reached</span>
+          <span class="title">Tier 5 — The SOC</span></div>
+        <p class="status">Three years. A team, and somebody in it who should not be.</p>
+        <p class="why">Not reached. Nothing here is a mark against anybody — it is the road ahead.</p>
+      </div>
+<h3>What this costs in the real world</h3>
+  <p>None of this is your balance — there is no business yet. These are the ordinary numbers for a
+    firm of the size you are about to build, so that later on, when something is too expensive, you
+    know what too expensive means.</p>
+  <ul>
+    <li><strong>What a small managed-service firm bills.</strong> Break-fix work runs roughly
+      $95–150 an hour. Managed contracts run a few thousand a month for a ten-to-thirty device
+      client. Five clients of that size is somewhere near $10,000 a month.</li>
+    <li><strong>Where the money actually is.</strong> Hardware resale turns over the largest number
+      and keeps the smallest slice — thirty laptops bought at $1,200 and sold at $1,350 is $40,500
+      of revenue and $4,500 of margin. Reselling cloud is similar. <strong>The recurring managed
+      work is the smallest number on the page and the profitable one</strong>, which surprises
+      nearly everybody.</li>
+    <li><strong>Staff.</strong> The rule of thumb is $150–200k of revenue per employee. That is why
+      a twelve-person firm cannot be run on $120,000 a year, and why the business has to grow
+      before the headcount can.</li>
+    <li><strong>What incidents cost.</strong> A business email compromise of the ordinary kind takes
+      $20–40k out of somebody. Outside forensics is $10–30k, breach counsel $5–15k. A regulated
+      breach at a firm this size reaches six figures once notification and a settlement are in.</li>
+    <li><strong>What the controls cost.</strong> The ones that would have stopped most of the above
+      cost nothing: turning on an alert, changing a password, closing a port, reading a log. The
+      expensive controls are rarely the ones that save you.</li>
+  </ul>
+  <p class="lede">Illustrative ranges, built from the shape of real pricing and real enforcement.
+    Not quotations, and not predictions.</p>
+<h3>Sustain and improve</h3>
+<p class="lede">Drawn from the tiers above, shortest first. The full account of each
+    one is in its own section.</p>
+<p><strong>Sustain.</strong></p><ul><li>The cameras cannot reach the family&#39;s devices.</li><li>You opened the log.</li><li>You worked it out by elimination — 2 ruled out with a reason before you settled.</li></ul>
+<p><strong>Improve.</strong></p><ul><li>6 devices are still on credentials that are published or reused.</li><li>You closed the way in, and you closed it late.</li></ul>
+<p>Nothing here is a mark against anybody. The business is still standing and the next
+    tier starts from wherever you left this one — which is the whole reason to run a house twice.</p>
+<h3>About this document</h3>
+  <div class="note">
+    <p>Objectives are labelled at <strong>domain and bullet level</strong> against the SY0-701 text
+      supplied by the instructor. No official sub-objective numbers are claimed.</p>
+    <p>Costs are <strong>illustrative ranges</strong> built from the shape of real pricing and real
+      enforcement. They are not quotations and not predictions.</p>
+    <p>Regulatory and contractual content is <strong>general education, not legal advice</strong>.</p>
+    <p>This describes performance in a simulation. It is <strong>not a statement of certification
+      readiness</strong> and does not predict an exam result.</p>
+  </div>
+  <p class="lede">Cyber Warrior Program — built by an instructor, for students, to make certification
+    study more interactive. For educational purposes only. Not affiliated with, endorsed by, or
+    sponsored by CompTIA®. All trademarks belong to their respective owners.</p></main>
+<footer class="site-footer">
+  <p><strong>This file is your save as well as your report.</strong> Keep it. Loading it back into
+    the simulation returns you to the start of the tier you had finished — which is what it is for
+    if this browser ever loses its data.</p>
+  <p>To hand it in, press <strong>Save as PDF</strong> above, or Ctrl-P. Send the PDF rather than
+    this file: an HTML attachment is a standard phishing delivery method and a security professional
+    is right to be wary of one.</p>
+</footer>
+</div>
+<script type="application/json" id="cwp-campaign">{"campaign":{"v":1,"student":{"name":"SSG J. Rivera","startedAt":1789952365765,"completedAt":null},"tiers":[{"tier":1,"scenario":"four-pack","seed":11817,"attempt":1,"startedAt":1789952365765,"closedAt":1789952366516,"summary":{"scenario":"four-pack","seed":11817,"met":["no-way-in","cameras-cannot-reach-family","you-have-looked","you-know-what-is-happening"],"missed":["no-factory-passwords","rules-do-what-you-think"],"openWays":0,"taken":["cam1"],"ruledOut":2,"looked":true}}],"events":[{"n":1,"at":1789952365765,"tier":1,"kind":"tier.started","detail":"Tier 1 begun","data":{"scenario":"four-pack","seed":11817,"attempt":1}},{"n":2,"at":1789952365893,"tier":1,"kind":"change.forward","detail":"Closed. Unsolicited traffic from the internet now has nowhere to go.","data":null},{"n":3,"at":1789952366125,"tier":1,"kind":"change.segment","detail":"Cameras created. Traffic between segments is now the firewall's decision, not a free ride.","data":null},{"n":4,"at":1789952366242,"tier":1,"kind":"change.segment","detail":"Family created. Traffic between segments is now the firewall's decision, not a free ride.","data":null},{"n":5,"at":1789952366359,"tier":1,"kind":"verdict.wrong","detail":"Garage Camera is ruled out. It has talked to 203.0.113.90 and nothing else, every two minutes, since long before you sat down — the same address all four of the","data":{"option":"cam3"}},{"n":6,"at":1789952366440,"tier":1,"kind":"verdict.wrong","detail":"Smart TV is ruled out. It talks to its manufacturer constantly. That is not a fault, it is the product — and it is the same manufacturer, on the same port, as i","data":{"option":"tv"}},{"n":7,"at":1789952366507,"tier":1,"kind":"verdict.correct","detail":"Right. And notice what did NOT happen: nothing warned you, nothing turned red, and nothing would have. Closing the door it came through stops the next one getti","data":{"option":"cam1"}},{"n":8,"at":1789952366516,"tier":1,"kind":"tier.closed","detail":"Tier 1 closed","data":{"scenario":"four-pack","seed":11817,"met":["no-way-in","cameras-cannot-reach-family","you-have-looked","you-know-what-is-happening"],"missed":["no-factory-passwords","rules-do-what-you-think"],"openWays":0,"taken":["cam1"],"ruledOut":2,"looked":true}}],"seq":8},"world":{"seed":11817,"tier":1,"wan":"203.0.113.2","gateway":"192.168.1.1","now":72800000,"looked":true,"devices":[{"id":"router","name":"Router","kind":"router","ip":"192.168.1.1","mac":"00:1d:cf:2a:7b:04","zone":"infra","patchable":true,"patched":false,"creds":{"user":"admin","pass":"admin","factory":true},"note":"The guard. Everything in and out of this house goes through it."},{"id":"laptop","name":"Laptop","kind":"computer","ip":"192.168.1.10","mac":"3c:22:fb:11:0a:81","zone":"trusted","patchable":true,"patched":true,"note":"Banking, email, photographs. The only device here with anything worth stealing — and nothing attacks it directly."},{"id":"phone","name":"Phone","kind":"mobile","ip":"192.168.1.11","mac":"a4:83:e7:5c:9d:2f","zone":"trusted","patchable":true,"patched":true,"transient":true,"note":"Leaves the house every day and comes back. Its lease expires; its address changes."},{"id":"tv","name":"Smart TV","kind":"iot","ip":"192.168.1.20","mac":"d4:9a:20:63:11:c7","zone":"trusted","patchable":false,"patched":false,"note":"Last firmware update was three years ago. There will not be another one."},{"id":"speaker","name":"Smart Speaker","kind":"iot","ip":"192.168.1.21","mac":"f0:81:73:2e:55:19","zone":"trusted","patchable":false,"patched":false,"note":"Talks to its manufacturer constantly. That is not a fault, it is the product."},{"id":"printer","name":"Printer","kind":"iot","ip":"192.168.1.30","mac":"00:15:99:c4:7a:03","zone":"trusted","patchable":true,"patched":false,"creds":{"user":"admin","pass":"admin","factory":true},"note":"Nobody has ever logged into it. Its web page has no password worth the name."},{"id":"cam1","name":"Front Door Camera","kind":"camera","ip":"192.168.1.50","mac":"b8:27:eb:04:1f:22","zone":"trusted","patchable":true,"patched":false,"creds":{"user":"admin","pass":"admin","factory":true},"services":[{"port":80,"proto":"tcp","name":"web interface","exposed":false},{"port":554,"proto":"tcp","name":"video stream","exposed":false}],"vendor":"203.0.113.90","note":"Four came in one box. They share a password that is printed in the manual and published online.","compromised":true,"compromisedAt":72480000},{"id":"cam2","name":"Back Door Camera","kind":"camera","ip":"192.168.1.51","mac":"b8:27:eb:04:1f:23","zone":"trusted","patchable":true,"patched":false,"creds":{"user":"admin","pass":"admin","factory":true},"services":[{"port":80,"proto":"tcp","name":"web interface","exposed":false},{"port":554,"proto":"tcp","name":"video stream","exposed":false}],"vendor":"203.0.113.90","note":"Four came in one box. They share a password that is printed in the manual and published online."},{"id":"cam3","name":"Garage Camera","kind":"camera","ip":"192.168.1.52","mac":"b8:27:eb:04:1f:24","zone":"trusted","patchable":true,"patched":false,"creds":{"user":"admin","pass":"admin","factory":true},"services":[{"port":80,"proto":"tcp","name":"web interface","exposed":false},{"port":554,"proto":"tcp","name":"video stream","exposed":false}],"vendor":"203.0.113.90","note":"Four came in one box. They share a password that is printed in the manual and published online."},{"id":"cam4","name":"Driveway Camera","kind":"camera","ip":"192.168.1.53","mac":"b8:27:eb:04:1f:25","zone":"trusted","patchable":true,"patched":false,"creds":{"user":"admin","pass":"admin","factory":true},"services":[{"port":80,"proto":"tcp","name":"web interface","exposed":false},{"port":554,"proto":"tcp","name":"video stream","exposed":false}],"vendor":"203.0.113.90","note":"Four came in one box. They share a password that is printed in the manual and published online."}],"firewall":{"forwards":[{"id":"fw-cam","wanPort":8080,"toDevice":"cam1","toPort":80,"proto":"tcp","enabled":false,"why":"Added so the cameras could be checked from work. Nobody has thought about it since."}],"rules":[]},"segments":[{"id":"cameras","name":"Cameras","members":["cam1","cam2","cam3","cam4"]},{"id":"family","name":"Family","members":["laptop","phone"]}],"history":[{"t":72480000,"what":"adversary.foothold","detail":"Front Door Camera accepted a login from 192.0.2.51","why":"factory credentials, reachable from the internet"},{"t":72800000,"what":"forward.closed","detail":"port 8080 → Front Door Camera:80","why":"closed — nothing outside needs to reach it"},{"t":72800000,"what":"segment.created","detail":"Cameras — 4 device(s)","why":"separated so a problem on one cannot reach the others"},{"t":72800000,"what":"segment.created","detail":"Family — 2 device(s)","why":"separated so a problem on one cannot reach the others"},{"t":72800000,"what":"log.opened","detail":"the log was read for the first time","why":"you cannot recognise abnormal until you know normal"},{"t":72800000,"what":"verdict.wrong","detail":"ruled out Garage Camera","why":""},{"t":72800000,"what":"verdict.wrong","detail":"ruled out Smart TV","why":""},{"t":72800000,"what":"verdict.correct","detail":"named Front Door Camera","why":"read the log and accounted for what leaves the house"}],"scenario":"four-pack","verdict":{"wrong":["cam3","tv"],"settled":true}},"saved":1789952366664}</script>
+</body>
+</html>

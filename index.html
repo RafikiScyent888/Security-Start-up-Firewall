@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-dyslexia="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Security Start-up Firewall — Tier 1</title>
+<meta name="description" content="Tier 1 of the Cyber Warrior Program security simulation: one house, one router, and a network somebody else set up badly.">
+
+<!-- Loaded SYNCHRONOUSLY and before the stylesheet, so the theme and reading
+     mode are stamped on <html> before the first pixel is painted. A deferred
+     module would flash white first, which for a student with damaged sight is
+     not a cosmetic problem. -->
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/style.css">
+<!-- Inline, because a missing /favicon.ico is a 404 on every single page
+     load and it buries the console errors that matter. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234e2b8a'/%3E%3Cpath d='M16 5l9 4v7c0 6-3.8 9.6-9 11-5.2-1.4-9-5-9-11V9z' fill='none' stroke='%23f2d16b' stroke-width='2.4'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="topbar">
+    <h1>The Security Start-up Firewall</h1>
+    <span class="tier">Tier 1 · the house</span>
+    <span class="clock" id="clock" aria-live="off">Day 1 · 20:00</span>
+    <div class="switches">
+      <button type="button" data-switch="theme" aria-pressed="true">Light mode</button>
+      <button type="button" data-switch="dyslexia" aria-pressed="false">Easier reading</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div>
+      <button type="button" class="nav-toggle" id="nav-toggle"
+              aria-expanded="false" aria-controls="tabs">
+        <span aria-hidden="true">☰</span>
+        <span>Panes</span>
+        <span class="where" id="nav-where"></span>
+        <span class="caret" aria-hidden="true">▾</span>
+      </button>
+      <nav id="tabs" class="tabs" role="tablist" aria-label="Panes" data-open="false"></nav>
+    </div>
+    <main id="pane" role="tabpanel" tabindex="-1"></main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Cyber Warrior Program — built by an instructor, for students, to make certification study more
+      interactive. For educational purposes only. Not affiliated with, endorsed by, or sponsored by
+      CompTIA®. All trademarks belong to their respective owners.</p>
+    <p>Every address in this simulation is from a documentation range reserved by RFC 5737, so nothing
+      here can point at a real host.</p>
+  </footer>
+
+</div>
+
+<noscript>
+  <div class="shell">
+    <div class="card">
+      <h2>This one needs JavaScript</h2>
+      <p>The whole of this tier is a network you change and an engine that judges what you changed.
+        There is no server behind it — it all runs in this page — so with scripting turned off there
+        is nothing to show you.</p>
+    </div>
+  </div>
+</noscript>
+
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>
