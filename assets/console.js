@@ -20,20 +20,36 @@
    ===================================================================== */
 
 import { device, segmentOf, portName, PORTS } from "./world.js";
-import { reachable, explain, review } from "./rules.js";
+import { reachable, explain, review, evaluate } from "./rules.js";
 import { esc } from "./map.js";
 
 /* ---------------------------------------------------------------------
    ONE DEVICE
    --------------------------------------------------------------------- */
-export function deviceConsole(world, id) {
-  const d = device(world, id);
-  if (!d) return `<p class="lede">Nothing is open. Pick a device from the inventory.</p>`;
+export function deviceConsole(world, id, editingRule) {
+  const d = device(world, id) || device(world, "router");
+  if (!d) return `<p class="lede">Nothing is open.</p>`;
 
   const open = reachable(world).filter(o => o.dev.id === d.id);
   const seg = segmentOf(world, d.id);
 
   const bits = [];
+
+  /* THE SWITCHER, AND WHY IT IS HERE.
+
+     Without it this pane showed whatever device was opened last and
+     offered no way to any other — so a student who opened the printer
+     could not get back to the router's firewall without going to The
+     house, scrolling past the map, and finding it in the inventory.
+     There was no route at all from this pane. That is a dead end, and
+     the build's own rule is that nothing a student does may strand
+     them.
+
+     The router is first and says what it carries, because somebody
+     looking for "the firewall settings" will not guess that they are
+     behind a button marked Console. */
+  bits.push(deviceSwitcher(world, d));
+
   bits.push(`<h2>${esc(d.name)}</h2>`);
   bits.push(`<p class="lede mono">${esc(d.ip)} &middot; ${esc(d.mac)}</p>`);
   bits.push(`<p>${esc(d.note || "")}</p>`);
@@ -101,15 +117,31 @@ export function deviceConsole(world, id) {
       `about patching it.</div>`);
   }
 
-  if (d.id === "router") bits.push(routerConsole(world));
+  if (d.id === "router") bits.push(routerConsole(world, editingRule));
 
   return bits.join("\n");
+}
+
+/** Every device, one click away, with where you are marked. */
+function deviceSwitcher(world, current) {
+  const order = world.devices.slice().sort((a, b) =>
+    (a.kind === "router" ? -1 : 0) - (b.kind === "router" ? -1 : 0));
+  return `<nav class="switcher" aria-label="Device">
+    ${order.map(d => {
+      const isHere = d.id === current.id;
+      const label = d.kind === "router"
+        ? "Router — firewall, forwarding and rules"
+        : d.name;
+      return `<button type="button" data-open-device="${esc(d.id)}"
+        ${isHere ? 'aria-current="true"' : ""}>${esc(label)}</button>`;
+    }).join("")}
+  </nav>`;
 }
 
 /* ---------------------------------------------------------------------
    THE ROUTER — NAT, then rules, then the review
    --------------------------------------------------------------------- */
-function routerConsole(world) {
+function routerConsole(world, editing) {
   const bits = [];
 
   /* --- 1. NAT ------------------------------------------------------- */
@@ -152,21 +184,31 @@ function routerConsole(world) {
     bits.push(`<p class="lede">No rules yet. Everything that has somewhere to go, goes.</p>`);
   } else {
     world.firewall.rules.forEach((r, i) => {
-      bits.push(`<div class="rule" data-action="${esc(r.action)}">
+      bits.push(`<div class="rule" data-action="${esc(r.action)}"${r.enabled === false ? ' data-off="true"' : ""}>
         <span class="n">${i + 1}</span>
-        <span class="said"><strong>${esc(explain(r, ip => nameFor(world, ip)))}</strong><br>
+        <span class="said"><strong>${esc(explain(r, ip => nameFor(world, ip)))}</strong>
+          ${r.enabled === false ? '<span class="flag neutral">switched off — never consulted</span>' : ""}<br>
           <span class="lede mono">${esc(r.dir)} &middot; src ${esc(r.srcIp)} &middot; dst ${esc(r.dstIp)}:${esc(String(r.dstPort))} &middot; ${esc(r.proto)}</span>
           ${r.note ? `<br><span class="lede">${esc(r.note)}</span>` : ""}</span>
         <span class="ops">
-          <button type="button" data-move-rule="${esc(r.id)}" data-delta="-1" aria-label="Move up">&uarr;</button>
-          <button type="button" data-move-rule="${esc(r.id)}" data-delta="1" aria-label="Move down">&darr;</button>
-          <button type="button" data-drop-rule="${esc(r.id)}" aria-label="Remove this rule">&times;</button>
+          <button type="button" data-move-rule="${esc(r.id)}" data-delta="-1" aria-label="Move rule ${i + 1} up">&uarr;</button>
+          <button type="button" data-move-rule="${esc(r.id)}" data-delta="1" aria-label="Move rule ${i + 1} down">&darr;</button>
+          <button type="button" data-toggle-rule="${esc(r.id)}" data-on="${r.enabled === false ? "1" : "0"}">
+            ${r.enabled === false ? "Switch on" : "Switch off"}</button>
+          <button type="button" data-edit-rule="${esc(r.id)}">Edit</button>
+          <button type="button" data-drop-rule="${esc(r.id)}" aria-label="Remove rule ${i + 1}">&times;</button>
         </span>
       </div>`);
+      /* The editor opens in place, prefilled, so changing a port does
+         not mean deleting a rule and retyping it from memory — and
+         editing never moves it, because its position IS the control. */
+      if (editing === r.id) bits.push(ruleForm(world, r));
     });
   }
 
-  bits.push(newRuleForm(world));
+  if (!editing) bits.push(ruleForm(world, null));
+
+  bits.push(packetTester(world, world.test));
 
   /* --- 3. the review ------------------------------------------------ */
   const notes = review(world);
@@ -183,36 +225,106 @@ function routerConsole(world) {
   return bits.join("\n");
 }
 
-function newRuleForm(world) {
+/** One form, used to write a rule and to change one. Prefilled when
+    editing, because retyping six fields to fix a port is how a
+    student stops experimenting. */
+function ruleForm(world, r) {
+  const sel = (v, want) => (String(v) === String(want) ? " selected" : "");
   const opts = world.devices.map(d =>
-    `<option value="${esc(d.ip)}">${esc(d.name)} (${esc(d.ip)})</option>`).join("");
+    `<option value="${esc(d.ip)}"${r ? sel(r.srcIp, d.ip) : ""}>${esc(d.name)} (${esc(d.ip)})</option>`).join("");
+  const optd = world.devices.map(d =>
+    `<option value="${esc(d.ip)}"${r ? sel(r.dstIp, d.ip) : ""}>${esc(d.name)} (${esc(d.ip)})</option>`).join("");
   const ports = Object.keys(PORTS).map(p =>
-    `<option value="${p}">${p} — ${esc(PORTS[p].name)}</option>`).join("");
-  return `<form data-form="rule" class="card" style="background:var(--surface-2)">
-    <h3 style="margin-top:0">Write a rule</h3>
+    `<option value="${p}"${r ? sel(r.dstPort, p) : ""}>${p} — ${esc(PORTS[p].name)}</option>`).join("");
+
+  return `<form data-form="rule" ${r ? `data-edit="${esc(r.id)}"` : ""} class="card" style="background:var(--surface-2)">
+    <h3 style="margin-top:0">${r ? "Change this rule" : "Write a rule"}</h3>
     <div class="log-controls">
       <label class="sr-only" for="r-dir">Direction</label>
       <select id="r-dir" name="dir">
-        <option value="inbound">inbound — from the internet</option>
-        <option value="outbound">outbound — to the internet</option>
-        <option value="internal">internal — device to device</option>
+        <option value="inbound"${r ? sel(r.dir, "inbound") : ""}>inbound — from the internet</option>
+        <option value="outbound"${r ? sel(r.dir, "outbound") : ""}>outbound — to the internet</option>
+        <option value="internal"${r ? sel(r.dir, "internal") : ""}>internal — device to device</option>
       </select>
       <label class="sr-only" for="r-action">Action</label>
       <select id="r-action" name="action">
-        <option value="deny">deny</option>
-        <option value="allow">allow</option>
+        <option value="deny"${r ? sel(r.action, "deny") : ""}>deny</option>
+        <option value="allow"${r ? sel(r.action, "allow") : ""}>allow</option>
       </select>
       <label class="sr-only" for="r-src">Source</label>
-      <select id="r-src" name="srcIp"><option value="any">from anywhere</option>${opts}</select>
+      <select id="r-src" name="srcIp">
+        <option value="any"${r ? sel(r.srcIp, "any") : ""}>from anywhere</option>${opts}</select>
       <label class="sr-only" for="r-dst">Destination</label>
-      <select id="r-dst" name="dstIp"><option value="any">to anywhere</option>${opts}</select>
+      <select id="r-dst" name="dstIp">
+        <option value="any"${r ? sel(r.dstIp, "any") : ""}>to anywhere</option>${optd}</select>
       <label class="sr-only" for="r-port">Port</label>
-      <select id="r-port" name="dstPort"><option value="any">any port</option>${ports}</select>
-      <button class="btn-primary" type="submit">Add it to the bottom</button>
+      <select id="r-port" name="dstPort">
+        <option value="any"${r ? sel(r.dstPort, "any") : ""}>any port</option>${ports}</select>
     </div>
-    <p class="lede">It goes on the end, which means it is only ever consulted if every rule above it
-      failed to match. Move it if that is not what you meant.</p>
+    <div class="log-controls">
+      <label class="sr-only" for="r-note">Why</label>
+      <input id="r-note" name="note" type="text" style="flex:1 1 18rem"
+             placeholder="Why this rule exists — the next person will need it"
+             value="${r ? esc(r.note || "") : ""}">
+      <button class="btn-primary" type="submit">${r ? "Save the change" : "Add it to the bottom"}</button>
+      ${r ? `<button type="button" class="btn-quiet" data-edit-rule="">Cancel</button>` : ""}
+    </div>
+    <p class="lede">${r
+      ? "Changing a rule does not move it. Where it sits in the order is a separate decision, and it is the one that decides what actually happens."
+      : "It goes on the end, which means it is only ever consulted if every rule above it failed to match. Move it if that is not what you meant."}</p>
   </form>`;
+}
+
+/* ---------------------------------------------------------------------
+   THE PACKET TESTER
+
+   Ask the ruleset a question and get the same answer the router would
+   give, from the same function that judges every packet in the log.
+
+   This is what a real firewall gives you — PAN-OS calls it
+   test security-policy-match — and it is the fastest way to find out
+   that the rule you are proud of is never consulted. Reading a ruleset
+   top to bottom in your head is exactly the skill nobody has yet.
+   --------------------------------------------------------------------- */
+function packetTester(world, test) {
+  const optAll = world.devices.map(d =>
+    `<option value="${esc(d.ip)}"${test && test.srcIp === d.ip ? " selected" : ""}>${esc(d.name)}</option>`).join("");
+  const optDst = world.devices.map(d =>
+    `<option value="${esc(d.ip)}"${test && test.dstIp === d.ip ? " selected" : ""}>${esc(d.name)}</option>`).join("");
+  const ports = Object.keys(PORTS).map(p =>
+    `<option value="${p}"${test && String(test.dstPort) === p ? " selected" : ""}>${p} — ${esc(PORTS[p].name)}</option>`).join("");
+
+  let verdict = "";
+  if (test) {
+    const v = evaluate(world, test);
+    verdict = `<div class="msg" data-ok="${v.allow}" role="status">
+      <strong>${v.action === "accept" ? "ACCEPT" : "DROP"}</strong> — decided by ${esc(v.by)}.<br>
+      ${esc(v.why)}</div>`;
+  }
+
+  return `<h3>Try a packet</h3>
+  <p>Ask the router what it would do, and it answers with the same code that judges every line in
+    the log. The quickest way to find out that a rule you are proud of is never consulted.</p>
+  <form data-form="test" class="card" style="background:var(--surface-2)">
+    <div class="log-controls">
+      <label class="sr-only" for="t-dir">Direction</label>
+      <select id="t-dir" name="dir">
+        <option value="inbound"${test && test.dir === "inbound" ? " selected" : ""}>from the internet</option>
+        <option value="outbound"${test && test.dir === "outbound" ? " selected" : ""}>out to the internet</option>
+        <option value="internal"${test && test.dir === "internal" ? " selected" : ""}>device to device</option>
+      </select>
+      <label class="sr-only" for="t-src">From</label>
+      <select id="t-src" name="srcIp">
+        <option value="192.0.2.14">somebody on the internet</option>${optAll}</select>
+      <label class="sr-only" for="t-dst">To</label>
+      <select id="t-dst" name="dstIp">
+        <option value="${esc(world.wan)}">this house from outside</option>${optDst}</select>
+      <label class="sr-only" for="t-port">Port</label>
+      <select id="t-port" name="dstPort">${ports}</select>
+      <button class="btn-primary" type="submit">What happens?</button>
+    </div>
+  </form>
+  ${verdict}`;
 }
 
 function nameFor(world, ip) {
@@ -234,35 +346,81 @@ export function segmentConsole(world) {
   if (!world.segments.length) {
     bits.push(`<p class="lede">No segments yet.</p>`);
   } else {
-    world.segments.forEach(s => {
-      const names = s.members.map(id => (device(world, id) || { name: id }).name);
-      bits.push(`<div class="rule" data-action="allow">
-        <span class="said"><strong>${esc(s.name)}</strong><br>
-          <span class="lede">${esc(names.join(", "))}</span></span>
-        <span class="ops">
-          <button type="button" data-drop-segment="${esc(s.id)}">Dissolve</button>
-        </span>
+    /* EVERY SEGMENT IS EDITABLE IN PLACE.
+
+       It used to be create-or-dissolve and nothing between, so moving
+       one camera meant tearing down a whole segment and rebuilding it
+       from nothing. Nobody has ever changed a VLAN that way — you
+       assign the port to the new one and it leaves the old one. */
+    world.segments.forEach(sg => {
+      bits.push(`<div class="card" style="background:var(--surface-2)">
+        <div class="rule" data-action="allow" style="background:transparent;border:0;padding:0">
+          <span class="said"><strong>${esc(sg.name)}</strong>
+            <span class="lede">&middot; ${sg.members.length} device(s)</span></span>
+          <span class="ops">
+            <button type="button" data-drop-segment="${esc(sg.id)}">Dissolve</button>
+          </span>
+        </div>
+        <form data-form="rename-segment" data-segment="${esc(sg.id)}" class="log-controls">
+          <label class="sr-only" for="rn-${esc(sg.id)}">Rename ${esc(sg.name)}</label>
+          <input id="rn-${esc(sg.id)}" name="name" type="text" value="${esc(sg.name)}" style="flex:1 1 12rem">
+          <button type="submit">Rename</button>
+        </form>
+        <ul class="device-list">
+          ${sg.members.map(id => {
+            const d = device(world, id);
+            if (!d) return "";
+            return `<li><div class="rule" data-action="allow" style="background:transparent">
+              <span class="said">${esc(d.name)} <span class="lede mono">${esc(d.ip)}</span></span>
+              <span class="ops">${moveMenu(world, d, sg.id)}</span>
+            </div></li>`;
+          }).join("")}
+        </ul>
       </div>`);
     });
   }
 
+  /* Anything not in a segment yet, with the same one-click move. */
   const free = world.devices.filter(d => d.kind !== "router" && !segmentOf(world, d.id));
+  if (free.length && world.segments.length) {
+    bits.push(`<h3>Not in any segment</h3>
+      <p class="lede">These reach everything, and everything reaches them.</p>
+      <ul class="device-list">${free.map(d => `<li><div class="rule" data-action="deny" style="background:transparent">
+        <span class="said">${esc(d.name)} <span class="lede mono">${esc(d.ip)}</span></span>
+        <span class="ops">${moveMenu(world, d, null)}</span>
+      </div></li>`).join("")}</ul>`);
+  }
+
   bits.push(`<form data-form="segment" class="card" style="background:var(--surface-2)">
     <h3 style="margin-top:0">Draw a segment</h3>
     <label for="seg-name">Call it</label><br>
     <input id="seg-name" name="name" type="text" placeholder="Cameras" autocomplete="off">
     <fieldset style="border:1px solid var(--line);border-radius:var(--round);margin:.7rem 0">
       <legend>What goes in it</legend>
-      ${free.length
-        ? free.map(d => `<label style="display:block;padding:.2rem 0">
-            <input type="checkbox" name="member" value="${esc(d.id)}"> ${esc(d.name)}
-            <span class="lede mono">${esc(d.ip)}</span></label>`).join("")
-        : `<p class="lede">Every device is already in a segment. Dissolve one to move things about.</p>`}
+      ${world.devices.filter(d => d.kind !== "router").map(d => {
+        const sg = segmentOf(world, d.id);
+        return `<label style="display:block;padding:.2rem 0">
+          <input type="checkbox" name="member" value="${esc(d.id)}"> ${esc(d.name)}
+          <span class="lede mono">${esc(d.ip)}</span>
+          ${sg ? `<span class="flag neutral">currently in ${esc(sg.name)}</span>` : ""}</label>`;
+      }).join("")}
     </fieldset>
     <button class="btn-primary" type="submit">Create it</button>
-    <p class="lede">A device belongs to one segment at a time, the same way a switch port belongs to one
-      VLAN. Nothing here is permanent — dissolve a segment and its devices go back on the flat network.</p>
+    <p class="lede">A device belongs to one segment at a time, the same way a switch port belongs to
+      one VLAN. Anything already in another segment is <strong>moved</strong> into this one — and a
+      segment left with nothing in it is gone, because an empty one separates nothing.</p>
   </form>`);
 
   return bits.join("\n");
+}
+
+/** Where else this device could go, one click each. */
+function moveMenu(world, d, currentId) {
+  const others = world.segments.filter(sg => sg.id !== currentId);
+  const bits = others.map(sg =>
+    `<button type="button" data-move-device="${esc(d.id)}" data-to="${esc(sg.id)}">&rarr; ${esc(sg.name)}</button>`);
+  if (currentId) {
+    bits.push(`<button type="button" class="btn-quiet" data-move-device="${esc(d.id)}" data-to="">Take it out</button>`);
+  }
+  return bits.length ? bits.join("") : `<span class="lede">nowhere else to put it yet</span>`;
 }
