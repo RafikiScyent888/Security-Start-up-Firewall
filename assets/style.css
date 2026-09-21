@@ -1,0 +1,788 @@
+/* =====================================================================
+   THE SECURITY START-UP FIREWALL — TIER 1
+
+   ---------------------------------------------------------------------
+   CONTRAST IS A MEDICAL ACCOMMODATION HERE, NOT A PREFERENCE
+
+   Every ink in this file clears **7:1** against every ground it is ever
+   painted on — page, surface, and its own tinted chip — in both themes.
+   That is WCAG AAA for body text, and it is the floor rather than the
+   target. Large text (>=24px, or >=18.66px bold) would be allowed 4.5:1
+   and does not use it.
+
+   The numbers were computed before the colours were chosen, not after.
+   They are checked again on PAINTED PIXELS by verify/contrast.mjs,
+   because a checker that walks the cascade reads white text on a white
+   ancestor as a pass when the real background came from a gradient.
+
+   Nothing is dimmed into uselessness to show it is disabled or ruled
+   out. A struck option still carries the reason it was struck, and the
+   student still has to read it, so it still meets the floor.
+
+   ---------------------------------------------------------------------
+   THE PALETTE IS ROYAL
+
+   Green, purple, blue, red, silver, yellow. Nothing else. Each one has
+   a separate value per theme, because a colour that works on near-black
+   does not work on paper and pretending otherwise is how a palette ends
+   up failing in one mode.
+
+   ---------------------------------------------------------------------
+   COLOUR IS NEVER THE ONLY SIGNAL
+
+   Every state is marked at least three ways: the colour, a shape (an
+   inset rule, a border, a strike), and the words. A student who cannot
+   separate red from green loses nothing, and so does a student reading
+   this printed in black and white.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   TOKENS — dark is the base, light overrides
+   --------------------------------------------------------------------- */
+:root {
+  --bg:        #0c1016;
+  --surface:   #151c26;
+  --surface-2: #1d2631;
+  --line:      #2b3542;   /* quiet separation, decorative */
+  --edge:      #66768a;   /* meaningful outline, >=3:1 */
+
+  --ink:       #eef3f9;
+  --ink-dim:   #c3ced9;   /* still 11.9:1 — "dim" means quieter, not fainter */
+
+  --green:     #7fdca4;
+  --purple:    #cdb2f5;
+  --blue:      #8fc8f5;
+  --red:       #ff9d9d;
+  --silver:    #c9d2dc;
+  --yellow:    #f2d16b;
+
+  --green-bg:  #16291f;
+  --purple-bg: #221d2e;
+  --blue-bg:   #16222e;
+  --red-bg:    #2b1a1c;
+  --silver-bg: #1e242c;
+  --yellow-bg: #2a2417;
+
+  --focus:     #f2d16b;
+  --shadow:    0 1px 0 rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --tracking:  0;
+  --word:      normal;
+  --leading:   1.6;
+  --measure:   68ch;
+
+  --gap:   .9rem;
+  --pad:   1rem;
+  --round: 10px;
+}
+
+:root[data-theme="light"] {
+  --bg:        #f6f4ef;
+  --surface:   #ffffff;
+  --surface-2: #efece5;
+  --line:      #c8c3b8;
+  --edge:      #6e7681;
+
+  --ink:       #161b22;
+  --ink-dim:   #3d4652;
+
+  --green:     #0d5331;
+  --purple:    #4e2b8a;
+  --blue:      #11507f;
+  --red:       #8f0f1b;
+  --silver:    #3f4853;
+  --yellow:    #5d4200;
+
+  --green-bg:  #e3f2e9;
+  --purple-bg: #ede5fa;
+  --blue-bg:   #e3eff9;
+  --red-bg:    #fbeaeb;
+  --silver-bg: #eceef1;
+  --yellow-bg: #f8f2e0;
+
+  --focus:     #553093;
+  --shadow:    0 1px 0 rgba(0,0,0,.05), 0 6px 18px rgba(20,16,8,.10);
+}
+
+/* ---------------------------------------------------------------------
+   EASIER READING
+
+   The font swap is the smallest part of this. The spacing does most of
+   the work, and the shorter measure does the rest.
+   --------------------------------------------------------------------- */
+:root[data-dyslexia="on"] {
+  --font-body: Verdana, Tahoma, "Trebuchet MS", "DejaVu Sans", sans-serif;
+  --tracking:  .04em;
+  --word:      .16em;
+  --leading:   1.9;
+  --measure:   56ch;
+}
+
+/* ---------------------------------------------------------------------
+   BASE
+   --------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+@media (min-width: 700px) { html { font-size: 18px; } }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: var(--leading);
+  letter-spacing: var(--tracking);
+  word-spacing: var(--word);
+  /* Never justified. Ragged right is easier to track along. */
+  text-align: left;
+  min-height: 100vh;
+}
+
+h1, h2, h3 { line-height: 1.25; text-wrap: balance; margin: 0 0 .5em; }
+h1 { font-size: 1.35rem; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+
+p, li { max-width: var(--measure); }
+p { margin: 0 0 .8em; }
+
+a { color: var(--blue); text-underline-offset: .18em; }
+a:hover { text-decoration-thickness: 2px; }
+
+/* One visible focus treatment everywhere, and it is never removed. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+code, kbd, .mono { font-family: var(--font-mono); font-size: .92em; letter-spacing: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------------------------------------------------------------------
+   SHELL
+   --------------------------------------------------------------------- */
+.shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;   /* the 16px side gutter, always */
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .5rem var(--gap);
+  padding: 1rem 0 .75rem;
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 { margin: 0; }
+.topbar .tier {
+  font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--purple); background: var(--purple-bg);
+  border: 1px solid var(--purple); border-radius: 999px; padding: .15rem .6rem;
+}
+.topbar .switches { margin-left: auto; display: flex; gap: .5rem; flex-wrap: wrap; }
+
+.clock {
+  font-family: var(--font-mono);
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+  font-size: .85rem;
+}
+
+/* ---------------------------------------------------------------------
+   BUTTONS
+   --------------------------------------------------------------------- */
+button {
+  font: inherit;
+  letter-spacing: var(--tracking);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--round);
+  padding: .5rem .8rem;
+  cursor: pointer;
+  min-height: 44px;               /* thumbs, not cursors */
+}
+button:hover { border-color: var(--ink); }
+button[disabled] { cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--blue-bg);
+  border-color: var(--blue);
+  color: var(--blue);
+  font-weight: 700;
+}
+.btn-quiet { background: transparent; }
+
+/* ---------------------------------------------------------------------
+   NAVIGATION — one list, two presentations
+
+   A LEFT RAIL on a desk and a DRAWER on a phone, and they are the same
+   vertical list either way. That is the whole reason for the shape:
+   one thing to learn, not two.
+
+   It replaced a horizontally scrolling tab strip, which put three of
+   the six panes past the right-hand edge with nothing on screen saying
+   so. Content hidden past an edge with no affordance is exactly the
+   failure to avoid for somebody whose sight is damaged.
+
+   The rail is also what the students are walking towards. Sentinel,
+   Defender, Falcon, Kibana, Grafana, Meraki, UniFi and FortiGate all
+   use one. Firewall appliances — PAN-OS, QRadar — use top tabs
+   instead, which fits Tier 1 and stops fitting by Tier 5, when there
+   are nine panes and a laptop wraps them onto two rows.
+   --------------------------------------------------------------------- */
+.nav-toggle {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  margin: .7rem 0 0;
+  font-weight: 700;
+}
+.nav-toggle .caret { margin-left: auto; }
+.nav-toggle .where {
+  font-weight: 400;
+  font-size: .85rem;
+  color: var(--ink-dim);
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .4rem 0;
+}
+/* On a phone the list lives behind the button; on a desk the same
+   attribute means nothing because the rail is always shown.
+
+   `data-open` rather than the `hidden` attribute: `hidden` means "not
+   relevant", and overriding it in CSS so a desk can see the rail is
+   telling the browser one thing and the reader another. */
+.tabs[data-open="false"] { display: none; }
+
+.tabs button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-dim);
+  border-left: 4px solid transparent;
+  border-radius: var(--round);
+}
+.tabs button[aria-selected="true"] {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+  border-left-color: var(--purple);
+  font-weight: 700;
+}
+.tabs .badge {
+  display: inline-block; margin-left: .4rem;
+  font-size: .75rem; font-weight: 700;
+  padding: .05rem .4rem; border-radius: 999px;
+  background: var(--silver-bg); color: var(--silver); border: 1px solid var(--silver);
+  font-variant-numeric: tabular-nums;
+}
+
+.layout { display: block; }
+
+@media (min-width: 980px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 1.4rem;
+    align-items: start;
+  }
+  /* The button is a phone control. On a desk the rail is simply there. */
+  .nav-toggle { display: none; }
+  .tabs { position: sticky; top: 1rem; }
+  .tabs[data-open="false"] { display: flex; }
+}
+
+/* ---------------------------------------------------------------------
+   PANES AND CARDS
+   --------------------------------------------------------------------- */
+.pane { display: none; }
+.pane[data-active="true"] { display: block; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--round);
+  padding: var(--pad);
+  margin: 0 0 var(--gap);
+}
+.card > h2:first-child, .card > h3:first-child { margin-top: 0; }
+
+.lede { color: var(--ink-dim); }
+
+.grid { display: grid; gap: var(--gap); }
+@media (min-width: 760px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+
+/* ---------------------------------------------------------------------
+   THE SIX-OPTION BOARD
+
+   One correct, five wrong, and a wrong pick goes red and STAYS red
+   until the exercise is reset. The board is the student's working
+   memory; they should not have to hold it in their head.
+
+   Three signals on a struck option, never colour alone:
+     1. the colour
+     2. the inset rule down the left and the strike on the label
+     3. the words — "Ruled out", plus the reason
+   --------------------------------------------------------------------- */
+.options { display: grid; gap: .6rem; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 760px) { .options { grid-template-columns: 1fr 1fr; } }
+
+.option {
+  display: block; width: 100%; text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--edge);
+  border-left: 6px solid var(--edge);
+  border-radius: var(--round);
+  padding: .7rem .85rem;
+  min-height: 44px;
+}
+.option .label { display: block; font-weight: 600; }
+.option .mark {
+  display: inline-block; font-weight: 700; font-size: .78rem;
+  letter-spacing: .08em; text-transform: uppercase;
+  margin-right: .45rem;
+}
+.option .reason { display: block; margin-top: .35rem; font-size: .92rem; color: var(--ink-dim); }
+
+.option[data-state="wrong"] {
+  background: var(--red-bg);
+  border-color: var(--red);
+  border-left-color: var(--red);
+  color: var(--red);
+  cursor: not-allowed;
+}
+.option[data-state="wrong"] .label { text-decoration: line-through; text-decoration-thickness: 2px; }
+.option[data-state="wrong"] .reason { color: var(--red); text-decoration: none; }
+
+.option[data-state="right"] {
+  background: var(--green-bg);
+  border-color: var(--green);
+  border-left-color: var(--green);
+  color: var(--green);
+}
+.option[data-state="right"] .label::after { content: " ✓"; }
+
+/* A PRODUCT CHOICE, not a right answer.
+
+   Tiers 2 to 5 ask two different kinds of question, and the interface
+   has to keep them apart or a student reads a purchase as a score.
+   Green means "you got this right"; this is blue, means "this is what
+   you bought", and it can be changed while the tier is open. Marked
+   three ways like everything else — the colour, the left edge, and
+   the word "Chosen" with the consequence after it. */
+.option[data-state="chosen"] {
+  background: var(--blue-bg);
+  border-color: var(--blue);
+  border-left-color: var(--blue);
+  color: var(--blue);
+}
+.option[data-state="chosen"] .label::after { content: " ●"; }
+.option[data-state="chosen"] .reason { color: var(--blue); }
+
+/* The scenario brief. The discriminating detail is buried in here on
+   purpose — the way through a decision set is to hunt the key words —
+   so it needs to read as a passage rather than as interface furniture. */
+.brief {
+  border-left: 4px solid var(--edge);
+  padding: .1rem 0 .1rem .9rem;
+  margin: .6rem 0 .9rem;
+}
+
+/* ---------------------------------------------------------------------
+   OBJECTIVES AND THE HINT LADDER
+   --------------------------------------------------------------------- */
+.objective {
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--edge);
+  border-radius: var(--round);
+  background: var(--surface);
+  padding: .8rem .9rem;
+  margin-bottom: .7rem;
+}
+.objective[data-met="true"] { border-left-color: var(--green); }
+.objective[data-met="false"] { border-left-color: var(--yellow); }
+
+.objective .head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.objective .state {
+  font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  border-radius: 999px; padding: .1rem .55rem; border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.objective[data-met="true"]  .state { color: var(--green);  background: var(--green-bg); }
+.objective[data-met="false"] .state { color: var(--yellow); background: var(--yellow-bg); }
+.objective .title { font-weight: 700; }
+.objective .status { color: var(--ink-dim); margin: .35rem 0 0; }
+.objective .why { margin: .5rem 0 0; }
+
+.hint {
+  margin-top: .7rem;
+  border: 1px solid var(--purple);
+  border-left: 6px solid var(--purple);
+  background: var(--purple-bg);
+  color: var(--purple);
+  border-radius: var(--round);
+  padding: .7rem .85rem;
+}
+.hint .rung {
+  display: block; font-size: .78rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; margin-bottom: .25rem;
+}
+.hint p { color: var(--purple); margin: 0; }
+
+.progress {
+  display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+.progress .count { font-size: 1.6rem; font-weight: 700; }
+.progress .bar {
+  flex: 1 1 8rem; height: 12px; min-width: 6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--edge);
+  border-radius: 999px; overflow: hidden;
+}
+.progress .bar span { display: block; height: 100%; background: var(--green); }
+
+/* ---------------------------------------------------------------------
+   THE MAP
+
+   Mobile first, and that is not a slogan here. An earlier build used a
+   fixed 1000-unit viewBox inside a 350px phone, which painted 5px
+   glyphs — unreadable for anybody, and unusable for these students. So
+   the map scales its type with its box, and below 560px it stops being
+   a drawing and becomes a list, which is the honest thing for a
+   topology on a phone.
+   --------------------------------------------------------------------- */
+.map-wrap { overflow-x: auto; }
+/* SCROLL AT ONE TO ONE, NEVER SHRINK.
+
+   The first version set this to 520px against a 680-unit viewBox,
+   which is still a scale-down: it painted the map's labels at 8.4px
+   on a phone. Better than the 5px of the build before it and still
+   nowhere near good enough for these eyes.
+
+   680 is the viewBox width, so one unit is one CSS pixel and the
+   labels are exactly the size they say they are. On a phone that is
+   about two screenfuls of sideways scrolling inside the card — which
+   is fine, because the map is the picture and the inventory list
+   underneath is the interface. */
+.map { width: 100%; min-width: 680px; height: auto; display: block; }
+.map text { font-family: var(--font-body); fill: var(--ink); }
+.map .node-box { fill: var(--surface-2); stroke: var(--edge); stroke-width: 2; }
+
+/* REACHABLE FROM OUTSIDE is marked, because a student can read the
+   forwarding table and work it out for themselves. COMPROMISED IS NOT
+   MARKED ANYWHERE, and there is no style for it, because the whole tier
+   rests on the adversary saying nothing. A red ring round the camera
+   would be the alert this build exists to prove you do not get. The
+   only place the truth is written is the log. */
+.map .node-box.exposed { stroke: var(--red); stroke-width: 4; }
+.map .link { stroke: var(--edge); stroke-width: 2; }
+.map .link.uninspected { stroke-dasharray: 6 4; }
+.map .seg-box { fill: none; stroke: var(--purple); stroke-width: 2; stroke-dasharray: 4 4; }
+.map .seg-label { fill: var(--purple); font-weight: 700; }
+
+.device-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.device-list button { width: 100%; text-align: left; }
+.device-list .flags { display: block; margin-top: .3rem; font-size: .85rem; }
+
+.flag {
+  display: inline-block; margin: .15rem .3rem .15rem 0;
+  font-size: .78rem; font-weight: 700;
+  padding: .1rem .5rem; border-radius: 999px; border: 1px solid currentColor;
+}
+.flag.bad     { color: var(--red);    background: var(--red-bg); }
+.flag.warn    { color: var(--yellow); background: var(--yellow-bg); }
+.flag.ok      { color: var(--green);  background: var(--green-bg); }
+.flag.neutral { color: var(--silver); background: var(--silver-bg); }
+
+/* ---------------------------------------------------------------------
+   THE LOG
+
+   A table on a desk, stacked cards on a phone. A log squeezed into
+   eight columns on a 360px screen is a log nobody reads, and this whole
+   tier depends on somebody reading it.
+   --------------------------------------------------------------------- */
+.log-controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: var(--gap); }
+.log-controls select, .log-controls input {
+  font: inherit; color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--edge); border-radius: var(--round);
+  padding: .5rem .6rem; min-height: 44px;
+}
+
+.log { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.log th, .log td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.log th { color: var(--ink-dim); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+.log .t, .log .bytes { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.log .verdict { font-weight: 700; white-space: nowrap; }
+.log tr[data-action="drop"] .verdict   { color: var(--red); }
+.log tr[data-action="accept"] .verdict { color: var(--green); }
+.log .why { color: var(--ink-dim); }
+
+@media (max-width: 759px) {
+  .log, .log tbody, .log tr, .log td { display: block; width: 100%; }
+  .log thead { display: none; }
+  .log tr {
+    border: 1px solid var(--line);
+    border-left: 6px solid var(--edge);
+    border-radius: var(--round);
+    margin-bottom: .5rem; padding: .4rem .55rem;
+  }
+  .log tr[data-action="drop"]   { border-left-color: var(--red); }
+  .log tr[data-action="accept"] { border-left-color: var(--green); }
+  .log td { border: 0; padding: .1rem 0; }
+  .log td::before {
+    content: attr(data-label) " ";
+    color: var(--ink-dim); font-size: .78rem;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   VOO — and its emptiness
+
+   The alert pane is empty at Tier 1, and that is the lesson rather than
+   an unfinished screen. It has to LOOK deliberate, or a student reads
+   it as a bug and stops trusting the build.
+   --------------------------------------------------------------------- */
+.voo-empty {
+  border: 2px dashed var(--edge);
+  border-radius: var(--round);
+  padding: 1.4rem var(--pad);
+  text-align: left;
+}
+.voo-empty .big { font-size: 1.2rem; font-weight: 700; margin-bottom: .4rem; }
+
+/* ---------------------------------------------------------------------
+   RULES AND FORWARDS
+   --------------------------------------------------------------------- */
+.rule {
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--edge);
+  border-radius: var(--round);
+  background: var(--surface-2);
+  padding: .6rem .7rem; margin-bottom: .5rem;
+}
+.rule[data-action="allow"] { border-left-color: var(--green); }
+.rule[data-action="deny"]  { border-left-color: var(--red); }
+.rule .n {
+  font-family: var(--font-mono); font-weight: 700; color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.rule .said { flex: 1 1 14rem; }
+.rule .ops { display: flex; gap: .3rem; margin-left: auto; }
+.rule .ops button { padding: .35rem .6rem; min-height: 44px; min-width: 44px; }
+
+.note {
+  border: 1px solid var(--yellow);
+  border-left: 6px solid var(--yellow);
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border-radius: var(--round);
+  padding: .6rem .8rem; margin-bottom: .5rem;
+}
+
+.msg {
+  border: 1px solid var(--blue);
+  border-left: 6px solid var(--blue);
+  background: var(--blue-bg);
+  color: var(--blue);
+  border-radius: var(--round);
+  padding: .6rem .8rem; margin: .6rem 0;
+}
+.msg[data-ok="false"] { border-color: var(--red); border-left-color: var(--red); background: var(--red-bg); color: var(--red); }
+
+/* ---------------------------------------------------------------------
+   INSTRUCTOR NOTES — behind the PIN
+   --------------------------------------------------------------------- */
+.instructor {
+  border: 2px solid var(--purple);
+  border-radius: var(--round);
+  background: var(--purple-bg);
+  padding: var(--pad);
+}
+.instructor h3 { color: var(--purple); }
+.instructor p, .instructor li { color: var(--purple); }
+
+/* ---------------------------------------------------------------------
+   FOOTER
+   --------------------------------------------------------------------- */
+.site-footer {
+  margin-top: 2rem; padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-size: .88rem;
+}
+.site-footer p { max-width: var(--measure); }
+
+/* ---------------------------------------------------------------------
+   MOTION
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ---------------------------------------------------------------------
+   PAPER
+
+   A PDF is not professional because it is a PDF. It is professional
+   because somebody set it. A web page dumped through a printer looks
+   worse than a well-set HTML page — wrong margins, a heading stranded
+   at the foot of a page, a table sliced in half, navigation furniture
+   nobody asked for.
+
+   So this is where the effort goes, and it is what makes Ctrl-P
+   produce a document somebody meant to write.
+
+   THE DYSLEXIA SPACING SURVIVES INTO PRINT. It is an accommodation,
+   not a screen style, and a student who needs the letter spacing on a
+   monitor needs it on paper. The colours do not survive, because paper
+   is white.
+   --------------------------------------------------------------------- */
+@media print {
+  /* Black on white regardless of what the screen was doing. Printing a
+     dark theme wastes a cartridge and comes out grey on grey. */
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --line: #9a9a9a;
+    --edge: #444444;
+    --ink: #000000;
+    --ink-dim: #333333;
+    --green: #14532d; --purple: #3b2063; --blue: #0b3c63;
+    --red: #7a0c16;   --silver: #333333; --yellow: #4a3400;
+    --green-bg: #fff; --purple-bg: #fff; --blue-bg: #fff;
+    --red-bg: #fff;   --silver-bg: #fff; --yellow-bg: #fff;
+    --shadow: none;
+  }
+
+  @page { margin: 18mm 16mm 20mm; }
+
+  html { font-size: 11pt; }
+  body { background: #fff; }
+  .shell { max-width: none; padding: 0; }
+
+  /* Everything that is a control rather than content. */
+  .tabs, .nav-toggle, .switches, .log-controls, button, input, select, textarea,
+  form[data-form="aar-name"], form[data-form="aar-note"],
+  [data-save-copy], [data-load-copy], .clock {
+    display: none !important;
+  }
+
+  /* Cards stop being cards and become sections. */
+  .card, .objective, .note, .msg, .instructor, .hint {
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: #fff !important;
+    color: #000 !important;
+    padding: .6em 0 0;
+    margin: 0 0 1em;
+    box-shadow: none;
+  }
+  .objective { border-left: 0; }
+  .note, .instructor, .hint { border-left: 3pt solid #000; padding-left: .8em; }
+
+  /* Nothing stranded, nothing sliced. */
+  h1, h2, h3 { break-after: avoid-page; page-break-after: avoid; }
+  h2 { break-before: page; page-break-before: always; }
+  h2:first-of-type { break-before: auto; page-break-before: auto; }
+  .objective, .rule, blockquote, table, li { break-inside: avoid; page-break-inside: avoid; }
+  thead { display: table-header-group; }
+
+  /* A table on paper needs its lines back — there is no hover to help. */
+  .log { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
+  .log th, .log td { border: 0.5pt solid var(--line); padding: .3em .4em; }
+  .log thead { display: table-header-group; }
+
+  /* The side-by-side stays side by side; paper is wide enough. */
+  .grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; }
+
+  /* Their own words, set as a quotation rather than a form field. */
+  blockquote {
+    margin: .5em 0 .5em 1em;
+    padding-left: .8em;
+    border-left: 2pt solid var(--line);
+    font-style: normal;
+  }
+
+  /* A link is no use on paper unless you can see where it goes. */
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .85em; color: #333; }
+
+  .site-footer { border-top: 1pt solid var(--line); }
+  .map-wrap { overflow: visible; }
+  .map { min-width: 0; max-width: 100%; }
+}
+
+/* ---------------------------------------------------------------------
+   THE DEVICE SWITCHER
+
+   One click from any device to any other, and to the router. It exists
+   because without it the console showed whatever was opened last with
+   no way back — a dead end, in a build whose own rule is that nothing
+   a student does may strand them.
+   --------------------------------------------------------------------- */
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: 0 0 1rem;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid var(--line);
+}
+.switcher button {
+  flex: 0 1 auto;
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink-dim);
+  padding: .45rem .7rem;
+}
+.switcher button[aria-current="true"] {
+  background: var(--purple-bg);
+  border-color: var(--purple);
+  color: var(--purple);
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------
+   A LOCKED PANE
+
+   On the rail from the first minute, and not yet openable. Marked
+   THREE ways because these students have damaged sight and colour is
+   never the only signal: the word "Locked" in a badge, a dashed left
+   edge, and the full explanation on the pane when they open it.
+
+   NOT DIMMED INTO UNREADABILITY. The standing rule is explicit —
+   never dim something into uselessness to show it is ruled out, and
+   if the text carries a reason the student needs, it still has to
+   meet the floor. A locked label uses the ordinary ink colour and
+   says so in words instead.
+   --------------------------------------------------------------------- */
+#tabs button[data-locked="true"] {
+  border-left: 4px dashed var(--edge);
+  font-style: italic;
+}
+#tabs button[data-locked="true"] .badge {
+  font-style: normal;
+}
