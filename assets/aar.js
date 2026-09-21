@@ -335,10 +335,100 @@ export function render(opts) {
   bits.push(`<p>Nothing here is a mark against anybody. The business is still standing and the next
     tier starts from wherever you left this one — which is the whole reason to run a house twice.</p>`);
 
+  bits.push(nextSteps(w, c, prog, forPrint));
+
   if (instructor) bits.push(instructorSection(w, c, o, prog));
 
   /* --- the disclaimers a reviewer will look for ---------------------- */
   bits.push(disclaimers());
+
+  return bits.join("\n");
+}
+
+/* =====================================================================
+   THE GATE — what happens when a tier is finished with
+
+   Settled long ago: **a tier completes at 6 of 6, and at 5 of 6 they
+   may move on** with the build explaining what they left and how it
+   bites later.
+
+   Neither of those was anywhere in the interface. A student who
+   reached six of six was told "Tier 1 complete" and then given
+   nothing — a dead end at the exact moment they succeeded, which is
+   the worst place in the whole build to put one.
+
+   ---------------------------------------------------------------------
+   AND IT DOES NOT PRETEND TIER 2 EXISTS
+
+   Tier 2 is designed and not built. So there is no button for it,
+   because a button that does nothing is worse than no button: it
+   teaches a student that this thing lies to them, and then they have
+   no reason to believe the parts that do not.
+
+   What is here instead is the honest version — what Tier 2 will be,
+   what they are carrying into it, and the things they genuinely can
+   do now.
+   ===================================================================== */
+function nextSteps(w, c, prog, forPrint) {
+  const done = prog.filter(p => p.met).length;
+  const total = prog.length;
+  const missed = prog.filter(p => !p.met);
+  const taken = w.devices.filter(d => d.compromised);
+  const bits = [];
+
+  bits.push(`<h3>What happens next</h3>`);
+
+  if (done === total) {
+    bits.push(`<div class="msg" role="status"><strong>Tier 1 is complete.</strong> Six of six, and the
+      last one you established yourself rather than being told.</div>`);
+  } else if (done === total - 1) {
+    bits.push(`<div class="note"><strong>Five of six — you may move on.</strong> That is a deliberate
+      rule rather than a mercy: in a real job you move on with things outstanding, and knowing which
+      bill is coming is worth more than a clean sheet you got by grinding.</div>`);
+  } else {
+    bits.push(`<p>${done} of ${total}. The tier is not finished, and nothing is lost or locked —
+      carry on whenever you like. What is left is listed above with what each one costs later.</p>`);
+  }
+
+  if (missed.length && done >= total - 1) {
+    bits.push(`<p><strong>What you are carrying into Tier 2:</strong></p>
+      <ul>${missed.map(p => `<li><strong>${esc(p.title)}</strong> — ${esc(BITES[p.id] || "")}</li>`).join("")}</ul>`);
+  }
+  /* ONLY AFTER THEY HAVE COMMITTED. This section named the taken
+     device before the verdict in its first version, and the checks
+     caught it in the same minute — which is the whole reason they
+     compare the two worlds word for word and pixel for pixel. A
+     "what happens next" panel is exactly where a leak like this hides,
+     because it reads as forward-looking rather than as a finding. */
+  if (settled(w) && taken.length) {
+    bits.push(`<div class="note"><strong>And a foothold.</strong> The ${esc(taken[0].name)} goes into
+      Tier 2 still compromised. For six months there is nothing on this network worth taking — and
+      then a business starts, and there is.</div>`);
+  }
+
+  /* --- Tier 2, honestly ------------------------------------------- */
+  bits.push(`<h3>Tier 2 — the business starts</h3>`);
+  bits.push(`<p class="lede"><strong>Not built yet.</strong> It is designed in full and there is
+    nothing to play. Rather than a button that does nothing, here is what it is:</p>`);
+  bits.push(`<p>Six months on. The same house, the same network, the same laptop — and a first client,
+    so for the first time there is something here worth taking. You draw the line between the business
+    and the personal, which is the exact rule an employee breaks two tiers later. Three things happen:
+    the camera from tonight, a lookalike email, and ransomware. They are connected.</p>`);
+
+  /* --- what they can actually do now ------------------------------- */
+  if (!forPrint) {
+    bits.push(`<h3>What you can do now</h3>
+      <ul>
+        <li><strong>Play another of the six houses.</strong> Same lesson, a different fault, and the
+          verdict is a different answer each time. They are listed on the Objectives pane.</li>
+        <li><strong>Run this one again on a new seed</strong> — same house, different traffic, and you
+          already know what to look for. That is brushing up, not starting over.</li>
+        <li><strong>Save a copy.</strong> It is this document and it is your way back in. Do it at the
+          end of every tier, because clearing your browser deletes everything else.</li>
+      </ul>
+      <p><button type="button" class="btn-primary" data-save-copy>Save a copy</button>
+         <button type="button" data-go="objectives">Pick another house</button></p>`);
+  }
 
   return bits.join("\n");
 }
