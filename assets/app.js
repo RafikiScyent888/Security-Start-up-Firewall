@@ -36,6 +36,7 @@
 
 import { makeWorld, device, setPassword, factoryReset, setForward,
          addSegment, removeSegment, addRule, removeRule, moveRule,
+         moveDevice, renameSegment, setRuleEnabled, editRule,
          markLooked } from "./world.js";
 import { makeRule } from "./rules.js";
 import { makeAdversary } from "./adversary.js";
@@ -80,6 +81,7 @@ const state = {
   filter: {},
   hints: {},          /* objective id -> the hint text showing right now */
   navOpen: false,     /* only means anything on a phone; the rail is always there */
+  editingRule: null,  /* which rule has its editor open, if any */
   campaign: null,     /* the record that outlives a tier */
   message: null,
   lastGenerated: 0
@@ -222,13 +224,15 @@ function renderPane() {
       <p>You have moved in and inherited the network. Nobody did anything malicious — somebody wanted to
       check the cameras from work, followed a forum post, and never thought about it again. Walking into
       a network somebody else set up badly is what every job actually feels like.</p>
-      ${drawMap(w)}</div>`;
+      ${drawMap(w)}
+      <p><button type="button" class="btn-primary" data-open-device="router">
+        Open the firewall &mdash; port forwarding and rules</button></p></div>`;
     html += `<div class="card"><h3>Everything on it</h3>${deviceList(w)}</div>`;
     html += `<div class="card">${segmentConsole(w)}</div>`;
   }
 
   if (state.tab === "console") {
-    html += `<div class="card">${deviceConsole(w, state.openDevice)}</div>`;
+    html += `<div class="card">${deviceConsole(w, state.openDevice, state.editingRule)}</div>`;
   }
 
   if (state.tab === "log") {
@@ -306,6 +310,22 @@ function objectivesPane() {
   }).join("");
 
   const here = scenario(w.scenario);
+  /* THE GATE, where they will actually be looking. The AAR carries the
+     full version; this is the one line that stops six-of-six being a
+     dead end on the pane that shows the score. */
+  if (done >= prog.length - 1) {
+    html += `<div class="card">
+      <h3>${done === prog.length ? "Tier 1 is complete" : "Five of six — you may move on"}</h3>
+      <p>${done === prog.length
+        ? "Six of six, and the last one you established yourself rather than being told."
+        : "That is a rule rather than a mercy: in a real job you move on with things outstanding."}
+        <strong>Tier 2 is designed and not built yet</strong>, so the way forward for now is another
+        of the six houses, or this one again on a new seed.</p>
+      <p><button type="button" class="btn-primary" data-go="aar">Read the AAR</button>
+         <button type="button" data-save-copy>Save a copy</button></p>
+    </div>`;
+  }
+
   html += `<div class="card"><h3>This world</h3>
     <p><strong>${esc(here.name)}</strong> — ${esc(here.blurb)}</p>
     <p class="lede">Seed <span class="mono">${esc(String(w.seed))}</span>. Same seed, same minute, same
@@ -492,6 +512,32 @@ function wire() {
     const dr = t.closest("[data-drop-rule]");
     if (dr) { act("rule", removeRule(state.world, dr.getAttribute("data-drop-rule"))); return; }
 
+    const md = t.closest("[data-move-device]");
+    if (md) {
+      act("segment", moveDevice(state.world, md.getAttribute("data-move-device"),
+                                md.getAttribute("data-to") || null));
+      return;
+    }
+
+    const tr = t.closest("[data-toggle-rule]");
+    if (tr) {
+      act("rule", setRuleEnabled(state.world, tr.getAttribute("data-toggle-rule"),
+                                 tr.getAttribute("data-on") === "1"));
+      return;
+    }
+
+    const er = t.closest("[data-edit-rule]");
+    if (er) {
+      /* An empty value is Cancel. Opening an editor changes nothing in
+         the world, so it does not go through act() and does not count
+         against the hint ladder — thinking about a rule is not an
+         attempt at anything. */
+      const id = er.getAttribute("data-edit-rule");
+      state.editingRule = id || null;
+      renderPane();
+      return;
+    }
+
     const ds = t.closest("[data-drop-segment]");
     if (ds) { act("segment", removeSegment(state.world, ds.getAttribute("data-drop-segment"))); return; }
 
@@ -531,6 +577,15 @@ function wire() {
       /* Withdrawing the verdict withdraws the finding with it. The AAR
          itself stays — it is running, and it still holds what they did. */
       if (state.tab === "aar") { state.tab = "log"; renderPane(); }
+      return;
+    }
+
+    const go = t.closest("[data-go]");
+    if (go) {
+      state.tab = go.getAttribute("data-go");
+      renderPane();
+      const pane = document.getElementById("pane");
+      if (pane) { pane.focus(); pane.scrollIntoView({ block: "start" }); }
       return;
     }
 
@@ -612,14 +667,36 @@ function wire() {
     if (kind === "password") {
       act("password", setPassword(state.world, f.getAttribute("data-device"), data.get("pass")));
     } else if (kind === "rule") {
-      const r = makeRule({
+      const fields = {
         dir: data.get("dir"),
         srcIp: data.get("srcIp"),
         dstIp: data.get("dstIp"),
         dstPort: data.get("dstPort"),
-        action: data.get("action")
-      });
-      act("rule", addRule(state.world, r, "written by the owner"));
+        action: data.get("action"),
+        note: data.get("note") || ""
+      };
+      const editId = f.getAttribute("data-edit");
+      if (editId) {
+        state.editingRule = null;
+        act("rule", editRule(state.world, editId, fields));
+      } else {
+        act("rule", addRule(state.world, makeRule(fields), fields.note || "written by the owner"));
+      }
+    } else if (kind === "rename-segment") {
+      act("segment", renameSegment(state.world, f.getAttribute("data-segment"), data.get("name")));
+    } else if (kind === "test") {
+      /* Read-only. It asks the ruleset a question and changes nothing,
+         so it is kept off the record and off the hint ladder — and it
+         is stored on the world only so the answer survives the
+         repaint. */
+      state.world.test = {
+        dir: data.get("dir"),
+        srcIp: data.get("srcIp"),
+        dstIp: data.get("dstIp"),
+        dstPort: parseInt(data.get("dstPort"), 10),
+        proto: "tcp"
+      };
+      renderPane();
     } else if (kind === "segment") {
       act("segment", addSegment(state.world, data.get("name"), data.getAll("member")));
     } else if (kind === "log-filter") {
