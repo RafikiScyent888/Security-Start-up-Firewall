@@ -708,3 +708,33 @@ button[disabled] { cursor: not-allowed; }
   .map-wrap { overflow: visible; }
   .map { min-width: 0; max-width: 100%; }
 }
+
+/* ---------------------------------------------------------------------
+   THE DEVICE SWITCHER
+
+   One click from any device to any other, and to the router. It exists
+   because without it the console showed whatever was opened last with
+   no way back — a dead end, in a build whose own rule is that nothing
+   a student does may strand them.
+   --------------------------------------------------------------------- */
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: 0 0 1rem;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid var(--line);
+}
+.switcher button {
+  flex: 0 1 auto;
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink-dim);
+  padding: .45rem .7rem;
+}
+.switcher button[aria-current="true"] {
+  background: var(--purple-bg);
+  border-color: var(--purple);
+  color: var(--purple);
+  font-weight: 700;
+}
