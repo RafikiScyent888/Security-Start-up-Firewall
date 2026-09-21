@@ -707,7 +707,7 @@ button[disabled] { cursor: not-allowed; }
   .site-footer { border-top: 1pt solid var(--line); }
   .map-wrap { overflow: visible; }
   .map { min-width: 0; max-width: 100%; }
-} 
+}
 
 /* ---------------------------------------------------------------------
    THE DEVICE SWITCHER
