@@ -104,6 +104,20 @@ export function currentTier(c) {
   return c.tiers.length ? c.tiers[c.tiers.length - 1] : null;
 }
 
+/** The attempt that is STILL RUNNING for this tier, if there is one.
+
+    An attempt is something a student did on purpose — chose a new
+    night, chose another house, loaded a copy. Opening the page is not
+    one of those. Without this, every reload started a fresh attempt,
+    and a record meant to hold three years of campaign filled with
+    junk that no control could clear. */
+export function openTier(c, tier) {
+  for (let i = c.tiers.length - 1; i >= 0; i--) {
+    if (c.tiers[i].tier === tier && !c.tiers[i].closedAt) return c.tiers[i];
+  }
+  return null;
+}
+
 export function attemptOf(c, tier) {
   const runs = c.tiers.filter(t => t.tier === tier);
   return runs.length ? runs[runs.length - 1].attempt : 0;
@@ -166,6 +180,18 @@ const KEY = "cwp:firewall:campaign";
 
 export function save(c) {
   try { window.localStorage.setItem(KEY, JSON.stringify(c)); return true; }
+  catch (e) { return false; }
+}
+
+/** Throw the whole campaign away.
+
+    Deliberately NOT reachable from "a new night", which must never
+    cost somebody three years of record. This is the instructor
+    handing the machine to the next student, or somebody clearing out
+    their own practice runs — a separate act, asked for in those
+    words, and confirmed. */
+export function clear() {
+  try { window.localStorage.removeItem(KEY); return true; }
   catch (e) { return false; }
 }
 
