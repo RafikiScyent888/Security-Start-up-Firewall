@@ -90,7 +90,22 @@ const state = {
 /* ---------------------------------------------------------------------
    SETUP
    --------------------------------------------------------------------- */
-function fresh(seed, scenarioId) {
+/* `continuing` is true only on boot, when there is no saved world.
+
+   That case is somebody opening the page again, and it is NOT a new
+   attempt. If an attempt for this tier is still open, carry on with
+   it — same house, same seed, so closing the tab and coming back does
+   not silently deal a different world either.
+
+   Everything else that calls fresh() — a new night, another house,
+   loading a copy — IS a deliberate new attempt and says so by leaving
+   this off. */
+function fresh(seed, scenarioId, continuing) {
+  if (!state.campaign) state.campaign = C.load() || C.makeCampaign("");
+
+  const open = continuing ? C.openTier(state.campaign, 1) : null;
+  if (open) { scenarioId = open.scenario; seed = open.seed; }
+
   const w = buildWorld(scenarioId || "four-pack",
                        seed == null ? Math.floor(Math.random() * 100000) : seed);
   w.now = ARRIVE;
@@ -107,8 +122,7 @@ function fresh(seed, scenarioId) {
   state.rows = rows;
   state.lastGenerated = ARRIVE;
 
-  if (!state.campaign) state.campaign = C.load() || C.makeCampaign("");
-  C.startTier(state.campaign, 1, w.scenario, w.seed);
+  if (!open) C.startTier(state.campaign, 1, w.scenario, w.seed);
   C.save(state.campaign);
 }
 
@@ -332,6 +346,28 @@ function objectivesPane() {
       traffic, on every machine — so your instructor can send the whole room to one moment.</p>
     <p><button type="button" data-save>Save</button>
        <button type="button" class="btn-quiet" data-new-night>A new night — same house, new seed</button></p>
+  </div>`;
+
+  /* START OVER.
+
+     There was no way to do this, which is why clearing the browser
+     cache looked like the only option and did nothing — the cache
+     holds FILES, and everything this build remembers is site data in
+     a different box. Nothing in a cache clear ever touched it.
+
+     Kept apart from "a new night" on purpose, and worded so nobody
+     presses it expecting a new night: a new night keeps the record,
+     and this ends it. */
+  html += `<div class="card">
+    <h3>Start over</h3>
+    <p>A new night keeps your record — every house you have played, every attempt, and
+      everything the AAR says about them. That is the point of it.</p>
+    <p><strong>This clears all of it</strong> and returns this browser to a first visit:
+      the campaign record, the AAR, your name and start date, and tonight's house.
+      It cannot be undone from here.</p>
+    <p class="lede">Clearing your browser cache will not do this. A cache holds the site's
+      files; your progress is stored separately, which is why it kept coming back.</p>
+    <p><button type="button" class="btn-quiet" data-start-over>Start over — clear everything in this browser</button></p>
   </div>`;
 
   /* SIX HOUSES. Listed plainly, with what each one is about, because
@@ -608,6 +644,27 @@ function wire() {
       return;
     }
 
+    if (t.closest("[data-start-over]")) {
+      if (window.confirm(
+            "Start over?\n\nThis clears the campaign record, the AAR, your name and start "
+          + "date, and tonight's house. Everything goes back to a first visit.\n\n"
+          + "This cannot be undone. If you want a clean run WITHOUT losing your record, "
+          + "use “A new night” instead.")) {
+        Save.clear();
+        C.clear();
+        state.campaign = null;
+        fresh(null, "four-pack");
+        state.hints = {};
+        state.tab = "house";
+        state.openDevice = "router";
+        state.filter = {};
+        state.editingRule = null;
+        state.message = { ok: true, msg: "Cleared. This browser is back to a first visit." };
+        renderPane();
+      }
+      return;
+    }
+
     const sc = t.closest("[data-scenario]");
     if (sc) {
       const id = sc.getAttribute("data-scenario");
@@ -734,7 +791,7 @@ function wire() {
    GO
    --------------------------------------------------------------------- */
 const saved = Save.load();
-if (saved) restore(saved); else fresh(null, "four-pack");
+if (saved) restore(saved); else fresh(null, "four-pack", true);
 wire();
 renderTabs();
 renderPane();
